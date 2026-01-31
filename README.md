@@ -1,4 +1,5 @@
-How to run the program 101
+
+##How to run the program 101
 #To run the install script type the following into the command line:
 bash install.sh
 
