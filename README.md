@@ -51,7 +51,7 @@ assets/ - This is the location of the images and audio files.
 
 **Team Info**
 
-Github        Real Names
+Github    &    Real Names
 
 CentariB      Centarrius Brooks
 
