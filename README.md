@@ -1,14 +1,18 @@
 
-##How to run the program 101
-#To run the install script type the following into the command line:
+How to run the program 101
+
+To run the install script type the following into the command line:
 bash install.sh
 
 ##Use this command to run the program
 python3 main.py
 
 #If your virtual machine doesn't have Tkinter it should automatically install when you run install.sh.
+
 #In case Tkinter does not install after running the install script, input the following into the command line:
+
 sudo apt-get update
+
 sudo apt-get install -y python3-tk
 
 ##Structure of our Repo
