@@ -1,12 +1,16 @@
+How to run the program 101
+#To run the install script type the following into the command line:
+bash install.sh
 
-# How to run the program
+##Use this command to run the program
 python3 main.py
 
-#If your virtual machine doesn't have Tkinter
+#If your virtual machine doesn't have Tkinter it should automatically install when you run install.sh.
+#In case Tkinter does not install after running the install script, input the following into the command line:
 sudo apt-get update
 sudo apt-get install -y python3-tk
 
-#Structure of our Repo
+##Structure of our Repo
 main.py - Starts the whole app
 When python3 main.py is ran, this file runs first. 
 This creates the main window to decide which screen is shown (splash -> entry -> game).
