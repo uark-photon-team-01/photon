@@ -29,7 +29,7 @@ def changePhase(phase):
     The UI can use this to decide which screen will be shown.
     """
     state.phase = phase
-    recordLog("The Game is now in the " + str(phase), " phase.")
+    recordLog("The Game is now in the " + str(phase) + " phase.")
 
 
 def recordLog(message):
@@ -58,13 +58,13 @@ def clearItAll():
 def addPlayerToTeam(team, playerID, codename, equipmentID):
     """
     When the user enters a player to a roster this is called.
-    This will strore the player in the correct roster (red/green).
+    This will store the player in the correct roster (red/green).
     Later, this will also trigger the UDP broadcast of equipmentID.
     """
 
     capitalTeamname = str(team).upper() #Converts the team names to Uppercase so inputs can be compared easily
 
-    # With the new inputed info, a new PlayerData object is created. 
+    # With the new inputted info, a new PlayerData object is created. 
     player = PlayerData(
         playerID=playerID,
         codename=codename,
@@ -86,5 +86,79 @@ def addPlayerToTeam(team, playerID, codename, equipmentID):
                capitalTeamname + " with equipment " + str(equipmentID))
 
     # After a player is added, then equipmentID is broadcast
-    # Since this is Week 1, there is no real UDP yet, so we call a "Net Stub".
-    networkBC_eqmt(equipmentID)
+    # Since this is Week 1, there is no real UDP yet, so we call a "Net Stub" = "Networking Stub".
+    networkBroadcast_equipment(equipmentID)
+
+# -------------------------------------------------
+# These are the Stubs (placeholders) for Sprint 2 
+# -------------------------------------------------
+#
+# A "stub" is a fake function that is created so our program doesn't crash.
+# That way the UI and controller code run before the all of the database/UDP code is finished.
+#
+# Later, this is where Caleb will plug in the socket code.
+# For now, I will log the expected behavior of these functions.
+
+def dbGetCodename(playerID):
+    """
+    Database Stub:
+    Later on, Will is gonna search the PostgreSQL table and return a codename.
+
+    the return format should look like:
+    - (True, "Codename") if found
+    - (False, None) if not found
+    """
+    return (False, None)
+
+
+def dbInsertPlayer(playerID, codename):
+    """
+    Database Stub:
+    
+    Here Will is gonna insert a new player into the database.
+    At this moment the action is logged so there's no crashes.
+    """
+    recordLog("The player " + str(playerID) +
+               " is inserted with codename " + str(codename))
+
+
+def netSetIp(ip):
+    """
+    Network Stub:
+    Later on, Caleb is gonna store the IP and use it for UDP sockets.
+    But for right now let's just log it.
+    """
+    recordLog("The network IP is set to " + str(ip))
+
+
+def netBroadcastEquipment(equipmentID):
+    """
+    Network Stub:
+    Here, Caleb will send the equipmentID out on UDP broadcast port 7500.
+    For right now, let's just log what would be broadcast.
+    """
+    recordLog("This equipment ID " + str(equipmentID) + " would be broadcast.")
+
+
+def netStartUDP_Listener():
+    """
+    Network Stub:
+    Caleb will listen for hits after opening the UDP receive port 7501.
+    For right now, let's log the fact that we start listening here.
+    """
+    recordLog("Start UDP listener here.")
+
+
+# -----------------------------
+# Test Controller.py
+# To Run type python3 controller.py
+# -----------------------------
+if __name__ == "__main__":
+    clearItAll()
+    addPlayerToTeam("RED", 1, "Mordecai", 112)
+    addPlayerToTeam("GREEN", 2, "Rigby", 208)
+
+    print("The controller test was a success.")
+    print("The size of the Red team:", len(state.redTeam))
+    print("The size of the Green team:", len(state.greenTeam))
+    print("Here's the Log lines:", len(state.eventLog))
