@@ -3,7 +3,7 @@
 
 
 
-**To run the install script type the following into the command line:**
+**To run the install script, type the following into the command line:**
 
 - bash install.sh
 
