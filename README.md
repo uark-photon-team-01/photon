@@ -17,9 +17,9 @@
 #
 
 
-**Your virtual machine should automatically install Tkinter when you run install.sh.
+**Your virtual machine should automatically install Tkinter when you run install.sh.**
 
-In case Tkinter does not install after running the install script, input the following into the command line:**
+**In case Tkinter does not install after running the install script, input the following into the command line:**
 
 - sudo apt-get update
 
