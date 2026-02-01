@@ -64,13 +64,19 @@ assets/
   #
 
 
-**Team Info**
-
-Github    &    Real Names
+**Team Info: Github    &    Real Names**
 
 CentariB      
 - Centarrius Brooks
 
+WillBoone24
+- Will Boone
+
+EmmaMah258
+- Emma Mahaffey
+
+CollegeBoundCaleb
+- Caleb Carpenter
   
 
 
