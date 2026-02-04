@@ -88,7 +88,7 @@ def addPlayerToTeam(team, playerID, codename, equipmentID):
 
     # After a player is added, then equipmentID is broadcast
     # Since this is Week 1, there is no real UDP yet, so we call a "Net Stub" = "Networking Stub".
-    networkBroadcast_equipment(equipmentID)
+    networkBroadcast_equipment(equipmentID) #Caleb here- Check this. I belive it is supposed to be netBraodcast, not network
 
 # -------------------------------------------------
 # These are the Stubs (placeholders) for Sprint 2 
