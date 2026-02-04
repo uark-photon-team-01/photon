@@ -55,6 +55,7 @@ def netBroadcastEquipment(equipmentID):
     """
     This function should broadcast equipment codes on UDP port 7500.
     This is from Jim's python_udpclient.py
+    This can also be 202 or 221, signaling 'Game Start' or 'Game End'
     """
     global senderSocket
 
@@ -77,7 +78,7 @@ def netBeginUDP_Listener(newMessage=None):
     - we call newMessage(rawText) every time data is recieved. 
 
     Caleb you need to:
-    - Make sure messages like "transmitterID:hitID" are received
+    - Make sure messages like "transmitterID:hitID" are received -- Caleb: They are recieved
     - later on, you can parse and convert these into to TAG/BASE events 
     """
 
