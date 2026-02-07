@@ -4,7 +4,7 @@
 # - This is because the controller keeps everything consistent and prevents confusion.
 
 from model import GameState, PlayerData
-import udp #Caleb added
+from net import udp #Caleb added
 
 # This is the app's only shared game state.
 # Everyone will read & write through this object.
