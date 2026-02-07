@@ -3,12 +3,12 @@
 # - Also, your UI code shouldn't directly talk to Will's database or Caleb's UDP network code.
 # - This is because the controller keeps everything consistent and prevents confusion.
 
-from model import GameState, PlayerData
-import udp #Caleb added
+from model import Game_State, PlayerData
+from net import udp #Caleb added
 
 # This is the app's only shared game state.
 # Everyone will read & write through this object.
-state = GameState()
+state = Game_State()
 
 
 # ------------------------------
@@ -88,7 +88,7 @@ def addPlayerToTeam(team, playerID, codename, equipmentID):
 
     # After a player is added, then equipmentID is broadcast
     # Since this is Week 1, there is no real UDP yet, so we call a "Net Stub" = "Networking Stub".
-    networkBroadcast_equipment(equipmentID) #Caleb here- Check this. I belive it is supposed to be netBraodcast, not network
+    netBroadcastEquipment(equipmentID) 
 
 # -------------------------------------------------
 # These are the Stubs (placeholders) for Sprint 2 
@@ -129,6 +129,7 @@ def netSetIp(ip):
     Later on, Caleb is gonna store the IP and use it for UDP sockets.
     But for right now let's just log it.
     """
+    udp.netSetIp(ip)
     recordLog("The network IP is set to " + str(ip))
 
 
@@ -138,6 +139,7 @@ def netBroadcastEquipment(equipmentID):
     Here, Caleb will send the equipmentID out on UDP broadcast port 7500.
     For right now, let's just log what would be broadcast.
     """
+    udp.netBroadcastEquipment(equipmentID)
     recordLog("This equipment ID " + str(equipmentID) + " would be broadcast.")
 
 
@@ -147,19 +149,53 @@ def netStartUDP_Listener():
     Caleb will listen for hits after opening the UDP receive port 7501.
     For right now, let's log the fact that we start listening here.
     """
-    recordLog("Start UDP listener here.")
+    udp.netBeginUDP_Listener(recordLog)
+    recordLog("UDP Listener started on port 7501")
+
+
+# # -----------------------------
+# # Test Controller.py
+# # To Run type python3 controller.py
+# # -----------------------------
+# if __name__ == "__main__":
+#     clearItAll()
+#     addPlayerToTeam("RED", 1, "Mordecai", 112)
+#     addPlayerToTeam("GREEN", 2, "Rigby", 208)
+
+#     print("The controller test was a success.")
+#     print("The size of the Red team:", len(state.redTeam))
+#     print("The size of the Green team:", len(state.greenTeam))
+#     print("Here's the Log lines:", len(state.eventLog))
 
 
 # -----------------------------
-# Test Controller.py
-# To Run type python3 controller.py
+# Caleb  Integration Test
+# To Run type: python controller.py in one terminal. In another terminal, type : 
+# python -c "import socket; sock=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); sock.sendto(b'53', ('127.0.0.1', 7501)); print('Hit sent!')"
 # -----------------------------
 if __name__ == "__main__":
+    import time
+    
+    print("--- 1. Testing System Reset ---")
     clearItAll()
-    addPlayerToTeam("RED", 1, "Mordecai", 112)
-    addPlayerToTeam("GREEN", 2, "Rigby", 208)
 
-    print("The controller test was a success.")
-    print("The size of the Red team:", len(state.redTeam))
-    print("The size of the Green team:", len(state.greenTeam))
-    print("Here's the Log lines:", len(state.eventLog))
+    print("--- 2. Starting UDP Listener (Check for 'UDP received' messages) ---")
+    # This connects the network listener to the event log!
+    netStartUDP_Listener()
+
+    print("--- 3. Testing Player Add & Broadcast ---")
+    # This should trigger a broadcast on port 7500
+    addPlayerToTeam("RED", 1, "Mordecai", 112)
+    
+    print("--- SYSTEM IS LIVE ---")
+    print("Waiting for hits on Port 7501...")
+    print("Press Ctrl+C to stop.")
+    
+    # Keep the program alive so the background thread can listen
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nTest finished.")
+        # Print the log to prove the Controller 'heard' the network
+        print("Final Event Log:", state.eventLog)

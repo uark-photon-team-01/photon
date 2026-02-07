@@ -68,6 +68,8 @@ def netBroadcastEquipment(equipmentID):
     message = str(int(equipmentID)).encode("utf-8")
     senderSocket.sendto(message, (networkIP, broadcastPort))
 
+    print(f"UDP Broadcast sent: {equipmentID} to {networkIP}:{broadcastPort}")
+
 
 def netBeginUDP_Listener(newMessage=None):
     """
