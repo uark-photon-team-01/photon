@@ -141,7 +141,7 @@ def netBroadcastEquipment(equipmentID):
     recordLog("This equipment ID " + str(equipmentID) + " would be broadcast.")
 
 
-def netStartUDP_Listener():
+def netBeginUDP_Listener():
     """
     Network Stub:
     Caleb will listen for hits after opening the UDP receive port 7501.
