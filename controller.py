@@ -180,12 +180,12 @@ if __name__ == "__main__":
     clearItAll()
 
     print("--- 2. Starting UDP Listener (Check for 'UDP received' messages) ---")
-    # This connects the network listener to the event log!
+    # This connects the network listener to the event log
     netBeginUDP_Listener()
 
     print("--- 3. Testing Player Add & Broadcast ---")
     # This should trigger a broadcast on port 7500
-    addPlayerToTeam("RED", 1, "Mordecai", 112)
+    addPlayerToTeam("RED", 1, "Caleb", 112)
     
     print("--- SYSTEM IS LIVE ---")
     print("Waiting for hits on Port 7501...")
