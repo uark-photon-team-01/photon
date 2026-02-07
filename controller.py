@@ -3,11 +3,7 @@
 # - Also, your UI code shouldn't directly talk to Will's database or Caleb's UDP network code.
 # - This is because the controller keeps everything consistent and prevents confusion.
 
-<<<<<<< HEAD
 from model import Game_State, PlayerData
-=======
-from model import GameState, PlayerData
->>>>>>> 8ffecd467087a3e62232a59f404b8f4592988b0a
 from net import udp #Caleb added
 
 # This is the app's only shared game state.
