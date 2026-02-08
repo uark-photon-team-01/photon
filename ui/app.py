@@ -58,6 +58,31 @@ def startApp():
         entry = ttk.Label(root, text="This is not the real Player Entry Screen", font=("Times New Roman", 20))
         entry.pack(expand=True)
 
+        # IP CONFIGURATION ---
+        
+        # Create a container frame so they stay together
+        ip_frame = ttk.Frame(root)
+        ip_frame.pack(pady=20)
+
+        # Add the label and text entry box
+        ttk.Label(ip_frame, text="Network IP:").pack(side=tk.LEFT, padx=5)
+        
+        ip_entry = ttk.Entry(ip_frame)
+        ip_entry.pack(side=tk.LEFT, padx=5)
+        ip_entry.insert(0, "127.0.0.1") # Default value
+
+        # Create the function to run when button is clicked
+        def on_set_ip_click():
+            # Get the text from the box
+            new_ip = ip_entry.get()
+            # Call the controller
+            controller.netSetIp(new_ip)
+
+        # Add the button
+        ttk.Button(ip_frame, text="Set Network IP", command=on_set_ip_click).pack(side=tk.LEFT, padx=5)
+        
+        # ----------------------------------------
+
         # Here's the Sprint 2 checklist that you need to implement:
         # - team select (RED/GREEN)
         # - playerID input (int)

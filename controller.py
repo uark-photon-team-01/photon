@@ -131,6 +131,8 @@ def netSetIp(ip):
     """
     udp.netSetIp(ip)
     recordLog("The network IP is set to " + str(ip))
+    #Print to console so we can prove it works
+    print("The network IP is set to " + str(ip))
 
 
 def netBroadcastEquipment(equipmentID):
