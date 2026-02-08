@@ -24,23 +24,19 @@ from tkinter import ttk
 import controller  # You should only call the controller 
 
 MS_SplashTime = 3000  # 3 seconds
-TEAM_ROWS = 20 # number of roster rows (0-19)
+TEAM_ROWS = 15 # number of roster rows (0-14)
 
 class EntryScreen(tk.Frame):
-    """
-    Entry Terminal screen that resembles entry_terminal_screen.jpg:
-    - Title and subtitle
-    - Two team tables (Red / Green), 20 rows each
-    - Manual entry fields to add players
-    - F5/F12 buttons (and keybinds handled in startApp)
-    """
-    def __init__(self, parent):
+    def __init__(self, parent, on_start_game=None):
         super().__init__(parent, bg="black")
+        self.on_start_game = on_start_game
 
         # NEW: store local roster data for display (UI side)
         # Each entry: (player_id:int, codename:str, equipment_id:int)
         self.red_roster = []
         self.green_roster = []
+
+        self.player_in_db = False
 
         # -------------------------
         # Top Title Area
@@ -114,6 +110,8 @@ class EntryScreen(tk.Frame):
         ).grid(row=0, column=2, padx=6, pady=4, sticky="e")
         self.player_id_entry = ttk.Entry(controls_frame, width=10)
         self.player_id_entry.grid(row=0, column=3, padx=6, pady=4, sticky="w")
+        self.player_id_entry.bind("<FocusOut>", self.on_player_id_changed)
+        self.player_id_entry.bind("<Return>", self.on_player_id_changed)
 
         # Codename
         tk.Label(
@@ -144,20 +142,6 @@ class EntryScreen(tk.Frame):
         ).grid(row=1, column=0, columnspan=9, padx=6, pady=(2, 0), sticky="w")
 
         # -------------------------
-        # IP Configuration Area (kept from starter)
-        # -------------------------
-        ip_frame = tk.Frame(self, bg="black")
-        ip_frame.pack(pady=(5, 5))
-
-        tk.Label(ip_frame, text="Network IP:", fg="white", bg="black").pack(side=tk.LEFT, padx=5)
-
-        self.ip_entry = ttk.Entry(ip_frame, width=20)
-        self.ip_entry.pack(side=tk.LEFT, padx=5)
-        self.ip_entry.insert(0, "127.0.0.1")
-
-        ttk.Button(ip_frame, text="Set Network IP", command=self.on_set_ip_click).pack(side=tk.LEFT, padx=5)
-
-        # -------------------------
         # Bottom Button Bar (look like F-key buttons)
         # -------------------------
         buttons_frame = tk.Frame(self, bg="black")
@@ -165,8 +149,11 @@ class EntryScreen(tk.Frame):
 
         # These buttons help visually match the screenshot.
         # Sprint 2 only strictly needs F5 and F12 behaviors.
+        self._key_button(buttons_frame, "F1\nEntry", self.on_f1).pack(side="left", padx=6)
+        self._key_button(buttons_frame, "F3\nStart Game", self.on_f5).pack(side="left", padx=6)
         self._key_button(buttons_frame, "F5\nStart Game", self.on_f5).pack(side="left", padx=6)
         self._key_button(buttons_frame, "F12\nClear Game", self.on_f12).pack(side="right", padx=6)
+
 
         # Footer hint
         tk.Label(
@@ -243,23 +230,72 @@ class EntryScreen(tk.Frame):
             font=("Arial", 9, "bold")
         )
 
-    # -------------------------
-    # Controller wiring methods
-    # -------------------------
-    def on_set_ip_click(self):
-        new_ip = self.ip_entry.get().strip()
-        controller.netSetIp(new_ip)
-        self.status_var.set(f"Set Network IP to {new_ip}")
+    def on_player_id_changed(self, event=None):
+        raw = self.player_id_entry.get().strip()
+
+        # Reset behavior if empty
+        if raw == "":
+            self.player_in_db = False
+            self.codename_entry.configure(state="normal")
+            self.codename_entry.delete(0, "end")
+            self.status_var.set("")
+            return
+
+        # Validate player_id is an int
+        try:
+            player_id = int(raw)
+        except ValueError:
+            self.player_in_db = False
+            self.codename_entry.configure(state="normal")
+            self.codename_entry.delete(0, "end")
+            self.status_var.set("Player ID must be an integer.")
+            return
+
+        # Ask controller for codename
+        found = False
+        db_codename = ""
+
+        try:
+            result = controller.dbGetCodename(player_id)
+
+            # Common return patterns supported:
+            # (found_bool, codename_str)
+            # "codename"
+            # None / "" / (False, "")
+            if isinstance(result, tuple) and len(result) >= 2:
+                found = bool(result[0])
+                db_codename = str(result[1]) if result[1] is not None else ""
+            elif isinstance(result, str):
+                db_codename = result.strip()
+                found = (db_codename != "")
+            else:
+                found = False
+                db_codename = ""
+        except Exception:
+            found = False
+            db_codename = ""
+
+        # Only treat as found if codename is non-empty
+        if found and db_codename.strip():
+            self.player_in_db = True
+
+            self.codename_entry.configure(state="normal")
+            self.codename_entry.delete(0, "end")
+            self.codename_entry.insert(0, db_codename)
+            self.codename_entry.configure(state="disabled")
+
+            self.status_var.set(f"YAY! Player found in DB, using codename {db_codename}")
+        else:
+            self.player_in_db = False
+
+            self.codename_entry.configure(state="normal")
+            self.codename_entry.delete(0, "end")
+
+            self.status_var.set("Uh oh! Player not found. Enter codename to add new player.")
+            self.codename_entry.focus_set()
+
 
     def on_add_player(self):
-        """
-        Sprint 2 required flow:
-        - Read team, playerID, codename, equipmentID
-        - controller.dbGetCodename(playerID)
-        - if not found: controller.dbInsertPlayer(playerID, codename)
-        - controller.addPlayerToTeam(team, playerID, codename, equipmentID)
-        - controller.netBroadcastEquipment(equipmentID)
-        """
         team = self.team_var.get().strip().upper()
 
         # Validate ints
@@ -275,69 +311,54 @@ class EntryScreen(tk.Frame):
             self.status_var.set("Equipment ID must be an integer.")
             return
 
-        typed_codename = self.codename_entry.get().strip()
+        # Read codename from UI (might be disabled, that's fine)
+        codename_to_use = self.codename_entry.get().strip()
 
-        # DB lookup through controller
-        found = False
-        db_codename = ""
-
-        try:
-            result = controller.dbGetCodename(player_id)
-            # Support common return styles:
-            # (found, codename) OR codename OR None
-            if isinstance(result, tuple) and len(result) >= 2:
-                found, db_codename = result[0], result[1]
-            elif isinstance(result, str):
-                found, db_codename = True, result
-            else:
-                found, db_codename = False, ""
-        except Exception:
-            # If stub throws or not implemented yet, treat as not found
-            found, db_codename = False, ""
-
-        codename_to_use = db_codename if found and db_codename else typed_codename
-
-        if not codename_to_use:
-            self.status_var.set("Codename is required if player is not in DB.")
+        # If not found in DB, require codename typed
+        if not self.player_in_db and not codename_to_use:
+            self.status_var.set("Uh oh! Player not found. Please enter a codename to add new player.")
             return
 
-        if not found:
+        # If not found in DB, insert new player
+        if not self.player_in_db:
             try:
                 controller.dbInsertPlayer(player_id, codename_to_use)
+                self.status_var.set(f"Uh oh! Player not found. Adding new player to DB as {codename_to_use}")
             except Exception:
-                # If insert not implemented yet, still continue for UI demo
+                # DB may not be wired yet; continue for UI demo
                 pass
 
-        # Add to controller team list
+        # Add to controller team list (broadcast handled inside controller)
         try:
             controller.addPlayerToTeam(team, player_id, codename_to_use, equipment_id)
         except Exception as e:
             self.status_var.set(f"Controller addPlayerToTeam failed: {e}")
             return
 
-        # Broadcast equipment (required by checklist)
-        try:
-            controller.netBroadcastEquipment(equipment_id)
-        except Exception:
-            # If not implemented yet, ignore
-            pass
-
-        # Update our UI roster display
+        # Update UI roster
         roster = self.red_roster if team == "RED" else self.green_roster
 
         if len(roster) >= TEAM_ROWS:
-            self.status_var.set(f"{team} team is full (20 players).")
+            self.status_var.set(f"{team} team is full ({TEAM_ROWS} players).")
             return
 
         roster.append((player_id, codename_to_use, equipment_id))
         self.refresh_tables()
 
-        # Clear input boxes for next entry
+        # Clear inputs for next entry
         self.player_id_entry.delete(0, "end")
+        self.codename_entry.configure(state="normal")  # unlock for next player
         self.codename_entry.delete(0, "end")
         self.equipment_id_entry.delete(0, "end")
 
+        # Reset DB flag for next entry
+        self.player_in_db = False
+
         self.status_var.set(f"Added {codename_to_use} (Player {player_id}) to {team} with Equip {equipment_id}")
+
+    def on_f1(self):
+        # Placeholder for later (already on entry screen)
+        self.status_var.set("Already on Entry screen.")
 
     def on_f12(self):
         """F12 behavior: clear controller state and refresh UI."""
@@ -348,9 +369,16 @@ class EntryScreen(tk.Frame):
         self.status_var.set("Cleared all entries.")
 
     def on_f5(self):
-        """F5 behavior: start game placeholder (Action screen later)."""
-        print("The game has started but will switch to the action screen later.")
-        self.status_var.set("Game started (action screen later).")
+        try:
+            controller.changePhase("ACTION")
+        except Exception as e:
+            self.status_var.set(f"changePhase not ready: {e}")
+
+        # Switch what user sees
+        if self.on_start_game:
+            self.on_start_game()
+        else:
+            self.status_var.set("Game started (action screen later).")
 
     def refresh_tables(self):
         """Paint roster data into the 20-row tables."""
@@ -375,35 +403,90 @@ class EntryScreen(tk.Frame):
             player_box.configure(state="disabled")
             code_box.configure(state="disabled")
 
+class ActionScreen(tk.Frame):
+    def __init__(self, parent, on_return_entry=None):
+        super().__init__(parent, bg="black")
+        self.on_return_entry = on_return_entry
+
+        tk.Label(
+            self,
+            text="GAME ACTION SCREEN (placeholder)",
+            fg="white",
+            bg="black",
+            font=("Times New Roman", 28, "bold")
+        ).pack(pady=40)
+
+        tk.Label(
+            self,
+            text="Press F1 to return to Entry",
+            fg="white",
+            bg="black",
+            font=("Arial", 14)
+        ).pack()
+
+    def on_f1(self):
+        if self.on_return_entry:
+            self.on_return_entry()
+
 #the main.py should call this function
 def startApp():
-  
     root = tk.Tk()
     root.title("Team One's Photon Laser Tag")
-    root.geometry("800x790")
+    root.geometry("800x710")
+
+    content = tk.Frame(root, bg="black")
+    content.pack(side="top", fill="both", expand=True)
+
+    footer = tk.Frame(root, bg="black")
+    footer.pack(side="bottom", fill="x")
+
+    # --- IP CONFIGURATION (stays on bottom always) ---
+    ttk.Label(footer, text="Network IP:").pack(side=tk.LEFT, padx=6, pady=6)
+
+    ip_entry = ttk.Entry(footer, width=20)
+    ip_entry.pack(side=tk.LEFT, padx=6, pady=6)
+    ip_entry.insert(0, "127.0.0.1")
+
+    def on_set_ip_click():
+        controller.netSetIp(ip_entry.get().strip())
+
+    ttk.Button(footer, text="Set Network IP", command=on_set_ip_click).pack(side=tk.LEFT, padx=6, pady=6)
 
     # keybinds 
-    entry_screen_holder = {"screen": None}  # NEW: lets keybinds call the current entry screen safely
+    current_screen = {"screen": None}
 
-    # The Tkinter's bind will need a function that accepts only one parameter (the event object).
+    def show_screen(new_screen):
+        if current_screen["screen"] is not None:
+            current_screen["screen"].destroy()
+        current_screen["screen"] = new_screen
+        new_screen.pack(in_=content, fill="both", expand=True)
+    
     def f12Clear(event):
-        controller.clearItAll()
-        # Hey Emma, be sure to also refresh the entry screen after clearing
-        if entry_screen_holder["screen"] is not None:
-            entry_screen_holder["screen"].on_f12()
+        if current_screen["screen"] is not None and hasattr(current_screen["screen"], "on_f12"):
+            current_screen["screen"].on_f12()
+        else:
+            controller.clearItAll()
 
     def f5Start(event):
-        if entry_screen_holder["screen"] is not None:
-            entry_screen_holder["screen"].on_f5()
-        else:
-            print("The game has started but will switch to the action screen later.")
-        #  switch to the action screen later
+        if current_screen["screen"] is not None and hasattr(current_screen["screen"], "on_f5"):
+            current_screen["screen"].on_f5()
 
-    root.bind("<F12>", f12Clear) #When F12 is pressed, tkinter will call the function f12Clear
+    def f1Entry(event):
+        if current_screen["screen"] is not None and hasattr(current_screen["screen"], "on_f1"):
+            current_screen["screen"].on_f1()
+
+    def f3Start(event):
+        # Placeholder: same behavior as F5 for now
+        if current_screen["screen"] is not None and hasattr(current_screen["screen"], "on_f5"):
+            current_screen["screen"].on_f5()
+
+    root.bind("<F1>", f1Entry)
+    root.bind("<F3>", f3Start)
+    root.bind("<F12>", f12Clear)
     root.bind("<F5>", f5Start)
 
     # Splash screen 
-    splash_frame = tk.Frame(root, bg="black")
+    splash_frame = tk.Frame(content, bg="black")
     splash_frame.pack(fill="both", expand=True)
 
     splash_label = tk.Label(
@@ -440,50 +523,14 @@ def startApp():
 
         # This is just a placeholder right now so that the repo can run.
         # Hey Emma, make sure to replace this with the real Entry screen UI.
-        entry = EntryScreen(root)
-        entry.pack(fill="both", expand=True)
-        entry_screen_holder["screen"] = entry
+        def goToAction():
+            def backToEntry():
+                entry = EntryScreen(content, on_start_game=goToAction)
+                show_screen(entry)
+            show_screen(ActionScreen(content, on_return_entry=backToEntry))
 
-        # IP CONFIGURATION ---
-        
-        # Create a container frame so they stay together
-        ip_frame = ttk.Frame(root)
-        ip_frame.pack(pady=20)
-
-        # Add the label and text entry box
-        ttk.Label(ip_frame, text="Network IP:").pack(side=tk.LEFT, padx=5)
-        
-        ip_entry = ttk.Entry(ip_frame)
-        ip_entry.pack(side=tk.LEFT, padx=5)
-        ip_entry.insert(0, "127.0.0.1") # Default value
-
-        # Create the function to run when button is clicked
-        def on_set_ip_click():
-            # Get the text from the box
-            new_ip = ip_entry.get()
-            # Call the controller
-            controller.netSetIp(new_ip)
-
-        # Add the button
-        ttk.Button(ip_frame, text="Set Network IP", command=on_set_ip_click).pack(side=tk.LEFT, padx=5)
-        
-        # ----------------------------------------
-
-        # Here's the Sprint 2 checklist that you need to implement:
-        # - team select (RED/GREEN)
-        # - playerID input (int)
-        # - codename display/entry (string)
-        # - equipmentID input (int)
-        #
-        # Write code so that the database can flow through the Controller:
-        # - controller.dbGetCodename(playerID)
-        # - if not found: controller.dbInsertPlayer(playerID, codename)
-        #
-        # after the code above add:
-        # - controller.addPlayerToTeam(team, playerID, codename, equipmentID)
-        # - controller.netBroadcastEquipment(equipmentID)
-        #
-        # Here's the reference layout pic in Jim's repo: entry_terminal_screen.jpg
+        entry = EntryScreen(content, on_start_game=goToAction)
+        show_screen(entry)
 
     root.after(MS_SplashTime, goToBegin)
 
