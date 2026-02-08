@@ -9,7 +9,7 @@ Jim's starter material will be used here.
 - In Jim's repo there are assets & screen references:
   - assets/logo.jpg (splash logo)
   - entry_terminal_screen.jpg (entry screen reference)
-  - game_action.jpg (action screen reference)
+  - game_action.jpg (action screen reference) xbox
   - baseicon.jpg (use this later)
   - photon_tracks/ (later we will add music)
 
