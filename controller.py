@@ -142,6 +142,7 @@ def netBroadcastEquipment(equipmentID):
     udp.netBroadcastEquipment(equipmentID)
     recordLog("This equipment ID " + str(equipmentID) + " would be broadcast.")
 
+listener_is_running = False
 
 def netBeginUDP_Listener():
     """
@@ -149,10 +150,16 @@ def netBeginUDP_Listener():
     Caleb will listen for hits after opening the UDP receive port 7501.
     For right now, let's log the fact that we start listening here.
     """
+    global listener_is_running
+
+    if listener_is_running == True:
+        # If it's already running, do nothing!
+        return
+
     udp.netBeginUDP_Listener(recordLog)
     recordLog("UDP Listener started on port 7501")
 
-
+    listener_is_running = True
 # # -----------------------------
 # # Test Controller.py
 # # To Run type python3 controller.py

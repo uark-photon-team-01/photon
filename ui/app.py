@@ -76,4 +76,6 @@ def startApp():
 
     root.after(MS_SplashTime, goToBegin)
 
+    controller.netBeginUDP_Listener()
+
     root.mainloop()
