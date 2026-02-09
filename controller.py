@@ -4,7 +4,8 @@
 # - This is because the controller keeps everything consistent and prevents confusion.
 
 from model import Game_State, PlayerData
-from net import udp #Caleb added
+from net import udp  # Caleb added
+from db import database  # Will's database functions - REAL DB CONNECTION!
 
 # This is the app's only shared game state.
 # Everyone will read & write through this object.
@@ -91,37 +92,55 @@ def addPlayerToTeam(team, playerID, codename, equipmentID):
     netBroadcastEquipment(equipmentID) 
 
 # -------------------------------------------------
-# These are the Stubs (placeholders) for Sprint 2 
+# REAL Database Functions (NO LONGER STUBS!)
 # -------------------------------------------------
-#
-# A "stub" is a fake function that is created so our program doesn't crash.
-# That way the UI and controller code run before the all of the database/UDP code is finished.
-#
-# Later, this is where Caleb will plug in the socket code.
-# For now, I will log the expected behavior of these functions.
+# These now call Will's real database.py functions
 
 def dbGetCodename(playerID):
     """
-    Database Stub:
-    Later on, Will is gonna search the PostgreSQL table and return a codename.
+    Database Function - NOW CONNECTED TO REAL POSTGRESQL!
+    
+    This searches the PostgreSQL table and returns a codename.
 
-    the return format should look like:
+    Returns:
     - (True, "Codename") if found
     - (False, None) if not found
     """
-    return (False, None)
+    # Call the REAL database function from db/database.py
+    found, codename = database.dbGetCodename(playerID)
+    
+    if found:
+        recordLog(f"Player ID {playerID} found in database: {codename}")
+    else:
+        recordLog(f"Player ID {playerID} NOT found in database")
+    
+    return (found, codename)
 
 
 def dbInsertPlayer(playerID, codename):
     """
-    Database Stub:
+    Database Function - NOW CONNECTED TO REAL POSTGRESQL!
     
-    Here Will is gonna insert a new player into the database.
-    At this moment the action is logged so there's no crashes.
+    This inserts a new player into the database.
+    
+    Returns:
+    - True if successful
+    - False if failed
     """
-    recordLog("The player " + str(playerID) +
-               " is inserted with codename " + str(codename))
+    # Call the REAL database function from db/database.py
+    success = database.dbInsertPlayer(playerID, codename)
+    
+    if success:
+        recordLog(f"✓ Player {playerID} ({codename}) successfully saved to database")
+    else:
+        recordLog(f"✗ ERROR: Failed to save player {playerID} ({codename}) to database")
+    
+    return success
 
+
+# -------------------------------------------------
+# Network Stubs (Caleb's code - these are working!)
+# -------------------------------------------------
 
 def netSetIp(ip):
     """
@@ -162,19 +181,6 @@ def netBeginUDP_Listener():
     recordLog("UDP Listener started on port 7501")
 
     listener_is_running = True
-# # -----------------------------
-# # Test Controller.py
-# # To Run type python3 controller.py
-# # -----------------------------
-# if __name__ == "__main__":
-#     clearItAll()
-#     addPlayerToTeam("RED", 1, "Mordecai", 112)
-#     addPlayerToTeam("GREEN", 2, "Rigby", 208)
-
-#     print("The controller test was a success.")
-#     print("The size of the Red team:", len(state.redTeam))
-#     print("The size of the Green team:", len(state.greenTeam))
-#     print("Here's the Log lines:", len(state.eventLog))
 
 
 # -----------------------------
