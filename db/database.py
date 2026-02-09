@@ -138,6 +138,44 @@ def addPlayer(playerID, codename):
         conn.close()
 
 
+def updatePlayer(playerID, newCodename):
+    """Update an existing player's codename.
+
+    This will update the codename for a player that already exists in the database.
+    
+    Args:
+        playerID (int): The player's ID number
+        newCodename (str): The new codename to set
+
+    Returns:
+        bool: True if a row was updated, False if player doesn't exist
+
+    Raises:
+        psycopg2.Error: For database errors
+    """
+
+    conn = dbconnect()
+    try:
+        curse = conn.cursor()
+
+        # Update the player's codename
+        curse.execute(
+            "UPDATE players SET codename = %s WHERE id = %s;",
+            (newCodename, playerID),
+        )
+
+        # Check how many rows were affected
+        rows_updated = curse.rowcount
+
+        # Commit the transaction
+        conn.commit()
+
+        # Return True if at least one row was updated
+        return rows_updated > 0
+    finally:
+        conn.close()
+
+
 # -----------------------------------------------------------------------------
 # Controller-friendly wrappers (this matches the INTERNALS.md function names)
 # -----------------------------------------------------------------------------
@@ -155,26 +193,75 @@ def dbGetCodename(playerID):
         playerID (int): The player's ID to look up
     
     Returns:
-        tuple: (foundBool, codenameOrNone)
-            - (True, "PlayerName") if player exists
-            - (False, None) if player doesn't exist
+        tuple: (status, codenameOrNone)
+            - ("found", "PlayerName") if player exists
+            - ("not_found", None) if player doesn't exist in DB
+            - ("db_error", None) if database error occurred
     """
-    name = obtainCodename(playerID)
-    if name is None:
-        return (False, None)
-    return (True, name)
+    try:
+        name = obtainCodename(playerID)
+        if name is None:
+            return ("not_found", None)
+        return ("found", name)
+    except Exception as e:
+        print(f"Database error in dbGetCodename: {e}")
+        return ("db_error", None)
 
 
 def dbInsertPlayer(playerID, codename):
-    print(f"DEBUG: Attempting to insert player {playerID} | {codename}")
+    """Wrapper for the controller stub name.
+    
+    This provides a clean interface for the controller to add new players
+    with clear success/failure indication.
+    
+    Args:
+        playerID (int): The player's ID number
+        codename (str): The player's chosen codename
+    
+    Returns:
+        str: Status of the operation
+            - "success" if insert worked
+            - "duplicate" if player ID already exists
+            - "db_error" if other database error occurred
+    """
     try:
         addPlayer(playerID, codename)
-        print(f"DEBUG: Insert successful for {playerID}")
-        return True
+        return "success"
     except Exception as e:
-        print("Oh Nooo! There was a database insert error. It is:", e)
-        return False
+        error_msg = str(e).lower()
+        # Check if it's a duplicate key error
+        if "duplicate" in error_msg or "unique" in error_msg or "already exists" in error_msg:
+            print(f"Player {playerID} already exists in database")
+            return "duplicate"
+        else:
+            print(f"Database error in dbInsertPlayer: {e}")
+            return "db_error"
 
+
+def dbUpdatePlayer(playerID, newCodename):
+    """Update an existing player's codename.
+    
+    This provides a clean interface for the controller to update player codenames.
+    
+    Args:
+        playerID (int): The player's ID number
+        newCodename (str): The new codename to set
+    
+    Returns:
+        str: Status of the operation
+            - "success" if update worked
+            - "not_found" if player doesn't exist
+            - "db_error" if database error occurred
+    """
+    try:
+        was_updated = updatePlayer(playerID, newCodename)
+        if was_updated:
+            return "success"
+        else:
+            return "not_found"
+    except Exception as e:
+        print(f"Database error in dbUpdatePlayer: {e}")
+        return "db_error"
 
 
 # -----------------------------------------------------------------
