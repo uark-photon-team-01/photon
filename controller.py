@@ -5,7 +5,7 @@
 
 from model import Game_State, PlayerData
 from net import udp  # Caleb added
-from db import database  # Will's database functions - REAL DB CONNECTION!
+import db.database  # Will's database functions - REAL DB CONNECTION!
 
 # This is the app's only shared game state.
 # Everyone will read & write through this object.
