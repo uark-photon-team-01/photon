@@ -90,6 +90,10 @@ def addPlayerToTeam(team, playerID, codename, equipmentID):
     # After a player is added, then equipmentID is broadcast
     # Since this is Week 1, there is no real UDP yet, so we call a "Net Stub" = "Networking Stub".
     netBroadcastEquipment(equipmentID) 
+    # Add this near the end of addPlayerToTeam
+    database.dbInsertPlayer(playerID, codename)  # Calls your database code
+    print(f"DEBUG: Added {playerID} ({codename}) to the database")  # Optional console print
+
 
 # -------------------------------------------------
 # REAL Database Functions (NO LONGER STUBS!)
