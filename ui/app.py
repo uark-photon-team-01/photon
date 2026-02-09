@@ -4,6 +4,7 @@ The Sprint 2 requirements for this file are the following:
 - Then switch to Player Entry screen
 - F12 clears all entries (it will call the controller)
 - F5 starts game (switch to action screen later)
+- SPRINT 2 UPDATE: Add ability to update a player's codename
 
 Jim's starter material will be used here.
 - In Jim's repo there are assets & screen references:
@@ -20,7 +21,7 @@ Tips!
 
 import os # reliable path to assets
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import controller  # You should only call the controller 
 
 MS_SplashTime = 3000  # 3 seconds
@@ -131,6 +132,10 @@ class EntryScreen(tk.Frame):
         add_btn = ttk.Button(controls_frame, text="Add Player", command=self.on_add_player)
         add_btn.grid(row=0, column=8, padx=10, pady=4)
 
+        # NEW: Update Player button
+        update_btn = ttk.Button(controls_frame, text="Update Codename", command=self.on_update_player)
+        update_btn.grid(row=0, column=9, padx=10, pady=4)
+
         # Error/status label
         self.status_var = tk.StringVar(value="")
         tk.Label(
@@ -139,7 +144,7 @@ class EntryScreen(tk.Frame):
             fg="yellow",
             bg="black",
             font=("Arial", 10)
-        ).grid(row=1, column=0, columnspan=9, padx=6, pady=(2, 0), sticky="w")
+        ).grid(row=1, column=0, columnspan=10, padx=6, pady=(2, 0), sticky="w")
 
         # -------------------------
         # Bottom Button Bar (look like F-key buttons)
@@ -169,7 +174,7 @@ class EntryScreen(tk.Frame):
 
     def _build_team_panel(self, parent, team_name, header_bg, outline):
         """
-        Build a table-like panel with 20 rows. Each row has:
+        Build a table-like panel with 15 rows. Each row has:
         index label, player_id display, codename display.
         """
         panel = tk.Frame(parent, bg="black")
@@ -231,6 +236,7 @@ class EntryScreen(tk.Frame):
         )
 
     def on_player_id_changed(self, event=None):
+        """Called when player ID field changes - looks up player in database"""
         raw = self.player_id_entry.get().strip()
 
         # Reset behavior if empty
@@ -251,51 +257,51 @@ class EntryScreen(tk.Frame):
             self.status_var.set("Player ID must be an integer.")
             return
 
-        # Ask controller for codename
-        found = False
-        db_codename = ""
-
+        # Ask controller for codename with NEW STATUS CODES
         try:
-            result = controller.dbGetCodename(player_id)
-
-            # Common return patterns supported:
-            # (found_bool, codename_str)
-            # "codename"
-            # None / "" / (False, "")
-            if isinstance(result, tuple) and len(result) >= 2:
-                found = bool(result[0])
-                db_codename = str(result[1]) if result[1] is not None else ""
-            elif isinstance(result, str):
-                db_codename = result.strip()
-                found = (db_codename != "")
+            status, db_codename = controller.dbGetCodename(player_id)
+            
+            if status == "found" and db_codename:
+                # Player exists in database
+                self.player_in_db = True
+                self.codename_entry.configure(state="normal")
+                self.codename_entry.delete(0, "end")
+                self.codename_entry.insert(0, db_codename)
+                self.codename_entry.configure(state="disabled")
+                self.status_var.set(f"✓ Player found in DB: {db_codename}")
+                
+            elif status == "not_found":
+                # Player not in database
+                self.player_in_db = False
+                self.codename_entry.configure(state="normal")
+                self.codename_entry.delete(0, "end")
+                self.status_var.set("Player not found. Enter codename to add new player.")
+                self.codename_entry.focus_set()
+                
+            elif status == "db_error":
+                # Database error occurred
+                self.player_in_db = False
+                self.codename_entry.configure(state="normal")
+                self.codename_entry.delete(0, "end")
+                self.status_var.set("⚠ Database error! Check PostgreSQL connection.")
+                
             else:
-                found = False
-                db_codename = ""
-        except Exception:
-            found = False
-            db_codename = ""
-
-        # Only treat as found if codename is non-empty
-        if found and db_codename.strip():
-            self.player_in_db = True
-
-            self.codename_entry.configure(state="normal")
-            self.codename_entry.delete(0, "end")
-            self.codename_entry.insert(0, db_codename)
-            self.codename_entry.configure(state="disabled")
-
-            self.status_var.set(f"YAY! Player found in DB, using codename {db_codename}")
-        else:
+                # Unknown status
+                self.player_in_db = False
+                self.codename_entry.configure(state="normal")
+                self.codename_entry.delete(0, "end")
+                self.status_var.set(f"Unknown database status: {status}")
+                
+        except Exception as e:
+            # Unexpected error
             self.player_in_db = False
-
             self.codename_entry.configure(state="normal")
             self.codename_entry.delete(0, "end")
-
-            self.status_var.set("Uh oh! Player not found. Enter codename to add new player.")
-            self.codename_entry.focus_set()
+            self.status_var.set(f"Error: {e}")
 
 
     def on_add_player(self):
+        """Add player to team roster and database"""
         team = self.team_var.get().strip().upper()
 
         # Validate ints
@@ -316,17 +322,25 @@ class EntryScreen(tk.Frame):
 
         # If not found in DB, require codename typed
         if not self.player_in_db and not codename_to_use:
-            self.status_var.set("Uh oh! Player not found. Please enter a codename to add new player.")
+            self.status_var.set("Player not found. Please enter a codename to add new player.")
             return
 
         # If not found in DB, insert new player
         if not self.player_in_db:
             try:
-                controller.dbInsertPlayer(player_id, codename_to_use)
-                self.status_var.set(f"Uh oh! Player not found. Adding new player to DB as {codename_to_use}")
-            except Exception:
-                # DB may not be wired yet; continue for UI demo
-                pass
+                status = controller.dbInsertPlayer(player_id, codename_to_use)
+                
+                if status == "success":
+                    self.status_var.set(f"✓ New player added to DB as {codename_to_use}")
+                elif status == "duplicate":
+                    self.status_var.set(f"⚠ Player {player_id} already exists in DB")
+                    return
+                else:  # db_error
+                    self.status_var.set(f"✗ Database error - player not saved")
+                    return
+            except Exception as e:
+                self.status_var.set(f"Error: {e}")
+                return
 
         # Add to controller team list (broadcast handled inside controller)
         try:
@@ -356,6 +370,49 @@ class EntryScreen(tk.Frame):
 
         self.status_var.set(f"Added {codename_to_use} (Player {player_id}) to {team} with Equip {equipment_id}")
 
+    def on_update_player(self):
+        """NEW SPRINT 2 REQUIREMENT: Update an existing player's codename in the database"""
+        # Validate player ID
+        try:
+            player_id = int(self.player_id_entry.get().strip())
+        except ValueError:
+            self.status_var.set("Player ID must be an integer.")
+            return
+
+        # Get new codename (unlock the field first if it's locked)
+        self.codename_entry.configure(state="normal")
+        new_codename = self.codename_entry.get().strip()
+        
+        if not new_codename:
+            self.status_var.set("Please enter a new codename to update.")
+            return
+
+        # Confirm with user
+        confirm = messagebox.askyesno(
+            "Confirm Update",
+            f"Update Player {player_id}'s codename to '{new_codename}'?\n\nThis will change it in the database."
+        )
+        
+        if not confirm:
+            self.status_var.set("Update cancelled.")
+            return
+
+        # Call controller to update
+        try:
+            status = controller.dbUpdatePlayer(player_id, new_codename)
+            
+            if status == "success":
+                self.status_var.set(f"✓ Player {player_id} codename updated to: {new_codename}")
+                # Refresh the player info to show updated codename
+                self.on_player_id_changed()
+            elif status == "not_found":
+                self.status_var.set(f"⚠ Player {player_id} not found in database - cannot update")
+            else:  # db_error
+                self.status_var.set(f"✗ Database error - update failed")
+                
+        except Exception as e:
+            self.status_var.set(f"Error updating player: {e}")
+
     def on_f1(self):
         # Placeholder for later (already on entry screen)
         self.status_var.set("Already on Entry screen.")
@@ -381,7 +438,7 @@ class EntryScreen(tk.Frame):
             self.status_var.set("Game started (action screen later).")
 
     def refresh_tables(self):
-        """Paint roster data into the 20-row tables."""
+        """Paint roster data into the 15-row tables."""
         self._paint_roster(self.red_panel["rows"], self.red_roster)
         self._paint_roster(self.green_panel["rows"], self.green_roster)
 
@@ -432,7 +489,7 @@ class ActionScreen(tk.Frame):
 def startApp():
     root = tk.Tk()
     root.title("Team One's Photon Laser Tag")
-    root.geometry("800x710")
+    root.geometry("900x710")
 
     content = tk.Frame(root, bg="black")
     content.pack(side="top", fill="both", expand=True)
@@ -498,8 +555,8 @@ def startApp():
     )
     splash_label.pack(expand=True)
 
-    # Try to load Jim's logo from assets/logo.jpg.
-    # If it fails (missing file or jpg unsupported), fall back to text.
+    # Try to load Jim's logo from assets/logo.png
+    # If it fails (missing file or png unsupported), fall back to text.
     assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
     logo_path = os.path.join(assets_dir, "logo.png")
     logo_path = os.path.normpath(logo_path)
@@ -514,15 +571,12 @@ def startApp():
         splash_label.configure(image=logo_img, text="")
         splash_label.image = logo_img  # keep reference
     except Exception:
-        splash_label.configure(text="Splash Time!")
+        splash_label.configure(text="Photon Laser Tag\nSplash Screen")
 
-    # Emma make sure to show Jim's logo from assets/logo.jpg
-    # After 3 seconds, the player should go to Entry/Beginning screen 
+    # After 3 seconds, go to Entry/Beginning screen 
     def goToBegin():
         splash_frame.destroy()
 
-        # This is just a placeholder right now so that the repo can run.
-        # Hey Emma, make sure to replace this with the real Entry screen UI.
         def goToAction():
             def backToEntry():
                 entry = EntryScreen(content, on_start_game=goToAction)
