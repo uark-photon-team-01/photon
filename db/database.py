@@ -166,24 +166,15 @@ def dbGetCodename(playerID):
 
 
 def dbInsertPlayer(playerID, codename):
-    """Wrapper for the controller stub name.
-    
-    This provides a clean interface for the controller to add new players
-    with simple True/False success indication.
-    
-    Args:
-        playerID (int): The player's ID number
-        codename (str): The player's chosen codename
-    
-    Returns:
-        bool: True if insert worked, False if it failed
-    """
+    print(f"DEBUG: Attempting to insert player {playerID} | {codename}")
     try:
         addPlayer(playerID, codename)
+        print(f"DEBUG: Insert successful for {playerID}")
         return True
     except Exception as e:
         print("Oh Nooo! There was a database insert error. It is:", e)
         return False
+
 
 
 # -----------------------------------------------------------------
