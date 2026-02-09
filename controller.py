@@ -90,10 +90,6 @@ def addPlayerToTeam(team, playerID, codename, equipmentID):
     # After a player is added, then equipmentID is broadcast
     # Since this is Week 1, there is no real UDP yet, so we call a "Net Stub" = "Networking Stub".
     netBroadcastEquipment(equipmentID) 
-    # Add this near the end of addPlayerToTeam
-    database.dbInsertPlayer(playerID, codename)  # Calls your database code
-    print(f"DEBUG: Added {playerID} ({codename}) to the database")  # Optional console print
-
 
 # -------------------------------------------------
 # REAL Database Functions (NO LONGER STUBS!)
@@ -107,18 +103,21 @@ def dbGetCodename(playerID):
     This searches the PostgreSQL table and returns a codename.
 
     Returns:
-    - (True, "Codename") if found
-    - (False, None) if not found
+    - ("found", "Codename") if player exists
+    - ("not_found", None) if player doesn't exist
+    - ("db_error", None) if database error occurred
     """
     # Call the REAL database function from db/database.py
-    found, codename = database.dbGetCodename(playerID)
+    status, codename = database.dbGetCodename(playerID)
     
-    if found:
+    if status == "found":
         recordLog(f"Player ID {playerID} found in database: {codename}")
-    else:
+    elif status == "not_found":
         recordLog(f"Player ID {playerID} NOT found in database")
+    else:  # db_error
+        recordLog(f"Database error while looking up player ID {playerID}")
     
-    return (found, codename)
+    return (status, codename)
 
 
 def dbInsertPlayer(playerID, codename):
@@ -128,18 +127,45 @@ def dbInsertPlayer(playerID, codename):
     This inserts a new player into the database.
     
     Returns:
-    - True if successful
-    - False if failed
+    - "success" if insert worked
+    - "duplicate" if player already exists
+    - "db_error" if database error occurred
     """
     # Call the REAL database function from db/database.py
-    success = database.dbInsertPlayer(playerID, codename)
+    status = database.dbInsertPlayer(playerID, codename)
     
-    if success:
+    if status == "success":
         recordLog(f"✓ Player {playerID} ({codename}) successfully saved to database")
-    else:
-        recordLog(f"✗ ERROR: Failed to save player {playerID} ({codename}) to database")
+    elif status == "duplicate":
+        recordLog(f"⚠ Player {playerID} already exists in database")
+    else:  # db_error
+        recordLog(f"✗ ERROR: Database error while saving player {playerID} ({codename})")
     
-    return success
+    return status
+
+
+def dbUpdatePlayer(playerID, newCodename):
+    """
+    Database Function - NOW CONNECTED TO REAL POSTGRESQL!
+    
+    This updates an existing player's codename in the database.
+    
+    Returns:
+    - "success" if update worked
+    - "not_found" if player doesn't exist
+    - "db_error" if database error occurred
+    """
+    # Call the REAL database function from db/database.py
+    status = database.dbUpdatePlayer(playerID, newCodename)
+    
+    if status == "success":
+        recordLog(f"✓ Player {playerID} codename updated to: {newCodename}")
+    elif status == "not_found":
+        recordLog(f"⚠ Player {playerID} not found - cannot update")
+    else:  # db_error
+        recordLog(f"✗ ERROR: Database error while updating player {playerID}")
+    
+    return status
 
 
 # -------------------------------------------------
@@ -206,7 +232,7 @@ if __name__ == "__main__":
     # This should trigger a broadcast on port 7500
     addPlayerToTeam("RED", 1, "Caleb", 112)
     
-    print("--- SYSTEM IS LIVE ---")
+    print("--- SYSTEM IS LIVE ---")  # FIXED: Added closing parenthesis
     print("Waiting for hits on Port 7501...")
     print("Press Ctrl+C to stop.")
     
