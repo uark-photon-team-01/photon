@@ -37,9 +37,9 @@ from psycopg2 import sql  # this is used for advanced SQL building later
 connection_params = {
     "dbname": "photon",
     "user": "student",
-    # "password": "student",  # Hey Will, uncomment this if the Virtual Machine needs it 
-    # "host": "localhost",
-    # "port": "5432",
+    "password": "student",  # Hey Will, uncomment this if the Virtual Machine needs it 
+    "host": "localhost",
+    "port": "5432",
 }
 
 
