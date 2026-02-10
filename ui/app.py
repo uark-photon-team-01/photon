@@ -504,7 +504,7 @@ class ActionScreen(tk.Frame):
 def startApp():
     root = tk.Tk()
     root.title("Team One's Photon Laser Tag")
-    root.geometry("900x710")
+    root.geometry("1100x760")
 
     content = tk.Frame(root, bg="black")
     content.pack(side="top", fill="both", expand=True)
@@ -596,6 +596,7 @@ def startApp():
             def backToEntry():
                 entry = EntryScreen(content, on_start_game=goToAction)
                 show_screen(entry)
+                root.update_idletasks() #will help load entry screen faster
             show_screen(ActionScreen(content, on_return_entry=backToEntry))
 
         entry = EntryScreen(content, on_start_game=goToAction)
@@ -603,6 +604,6 @@ def startApp():
 
     root.after(MS_SplashTime, goToBegin)
 
-    controller.netBeginUDP_Listener()
+    root.after(100, controller.netBeginUDP_Listener)
 
     root.mainloop()
