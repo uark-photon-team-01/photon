@@ -347,7 +347,7 @@ if __name__ == "__main__":
     # Use the following command in the terminal: python3 db/database.py
     
     print("\n" + "=" * 60)
-    print("WEEK 1 DATABASE CONNECTION TEST")
+    print("Simple Database Connection Test")
     print("=" * 60)
     
     if testOurConnection():
@@ -377,5 +377,5 @@ if __name__ == "__main__":
         print("All tests completed!")
         print("=" * 60 + "\n")
     else:
-        print("\n✗ Database connection failed!")
+        print("\n Database connection failed!")
         print("Check your connection_params and make sure PostgreSQL is running.\n")
