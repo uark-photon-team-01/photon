@@ -1,6 +1,22 @@
 **How to run the program 101**
 -----
 
+Follow these commands EXACTLY (ignore the parentheses)
+
+To log into the Virtual Machine type "student" for the username and password, afterwards pressing enter.
+Then, once you are in press the "Terminal Emulator" (Bottom of the screen)
+
+1. cd ~ (Go Home)
+2. sudo apt-get update (Install basic tools)
+It will ask the password for student type "student" (ignore the air quotes).
+3. sudo apt-get install -y git python3 python3-pip python3-tk netcat-openbsd
+4. git clone https://github.com/uark-photon-team-01/photon.git (Clone our repo)
+5. cd ~/photon
+6. ls
+7. bash install.sh
+8. python3 main.py
+   
+
 
 
 **To run the install script, type the following into the command line:**
