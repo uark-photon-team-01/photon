@@ -23,6 +23,7 @@ It will ask the password for student type "student" (ignore the air quotes).
 
 - For some reason when starting the app not all of the widgets are drawn, just drag the window and resize it so everything fits.
 - when you drag the game window Linux/VirtualBox sends a fresh repaint event, which forces all widgets to draw.
+- NOTE: This doesn't always occur when first starting the game. Sometimes everything just loads automatically.
 
 #
 
