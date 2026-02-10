@@ -286,7 +286,7 @@ class EntryScreen(tk.Frame):
                 self.db_codename = None
                 self.codename_entry.configure(state="normal")
                 self.codename_entry.delete(0, "end")
-                self.status_var.set("⚠ Database error! Check PostgreSQL connection.")
+                self.status_var.set("Database error! Check PostgreSQL connection.")
                 
             else:
                 # Unknown status
