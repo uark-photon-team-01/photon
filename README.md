@@ -29,10 +29,10 @@ It will ask the password for student type "student" (ignore the air quotes).
 Test network code 
 
 In Terminal A type
-cd ~/photon
-pkill -f "python3 main.py" 2>/dev/null || true
-clear
-python3 main.py
+- cd ~/photon
+- pkill -f "python3 main.py" 2>/dev/null || true
+- clear
+- python3 main.py
 
 -You should see one listener line for this run
 
