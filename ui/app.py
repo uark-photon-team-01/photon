@@ -4,7 +4,7 @@ The Sprint 2 requirements for this file are the following:
 - Then switch to Player Entry screen
 - F12 clears all entries (it will call the controller)
 - F5 starts game (switch to action screen later)
-- SPRINT 2 UPDATE: Add ability to update a player's codename
+- Added the ability to update a player's codename
 
 Jim's starter material will be used here.
 - In Jim's repo there are assets & screen references:
@@ -32,7 +32,7 @@ class EntryScreen(tk.Frame):
         super().__init__(parent, bg="black")
         self.on_start_game = on_start_game
 
-        # NEW: store local roster data for display (UI side)
+        # store local roster data for display 
         # Each entry: (player_id:int, codename:str, equipment_id:int)
         self.red_roster = []
         self.green_roster = []
@@ -40,9 +40,7 @@ class EntryScreen(tk.Frame):
         self.player_in_db = False
         self.db_codename = None #stores the codename from the database when a player is found.
 
-        # -------------------------
         # Top Title Area
-        # -------------------------
         title_frame = tk.Frame(self, bg="black")
         title_frame.pack(fill="x", pady=(10, 0))
 
@@ -62,9 +60,7 @@ class EntryScreen(tk.Frame):
             font=("Times New Roman", 18, "bold")
         ).pack(pady=(3, 10))
 
-        # -------------------------
         # Middle Teams Area
-        # -------------------------
         teams_frame = tk.Frame(self, bg="black")
         teams_frame.pack(pady=5)
 
@@ -85,9 +81,8 @@ class EntryScreen(tk.Frame):
         self.red_panel["frame"].grid(row=0, column=0, padx=20)
         self.green_panel["frame"].grid(row=0, column=1, padx=20)
 
-        # -------------------------
-        # Entry Controls Area (manual add)
-        # -------------------------
+
+        # Entry Controls Area 
         controls_frame = tk.Frame(self, bg="black")
         controls_frame.pack(fill="x", pady=(10, 5))
 
@@ -147,13 +142,11 @@ class EntryScreen(tk.Frame):
             font=("Arial", 10)
         ).grid(row=1, column=0, columnspan=10, padx=6, pady=(2, 0), sticky="w")
 
-        # -------------------------
+
         # Bottom Button Bar (look like F-key buttons)
-        # -------------------------
         buttons_frame = tk.Frame(self, bg="black")
         buttons_frame.pack(fill="x", pady=(10, 0))
 
-        # These buttons help visually match the screenshot.
         # Sprint 2 only strictly needs F5 and F12 behaviors.
         self._key_button(buttons_frame, "F1\nEntry", self.on_f1).pack(side="left", padx=6)
         self._key_button(buttons_frame, "F3\nStart Game", self.on_f5).pack(side="left", padx=6)
@@ -213,7 +206,7 @@ class EntryScreen(tk.Frame):
             )
             code_box.grid(row=i + 1, column=2, pady=1)
 
-            # Display-only look: disable them
+            # This is the Display-only look to disable them
             player_box.configure(state="disabled")
             code_box.configure(state="disabled")
 
@@ -243,6 +236,7 @@ class EntryScreen(tk.Frame):
         # Reset behavior if empty
         if raw == "":
             self.player_in_db = False
+            self.db_codename = None
             self.codename_entry.configure(state="normal")
             self.codename_entry.delete(0, "end")
             self.status_var.set("")
@@ -253,6 +247,7 @@ class EntryScreen(tk.Frame):
             player_id = int(raw)
         except ValueError:
             self.player_in_db = False
+            self.db_codename = None
             self.codename_entry.configure(state="normal")
             self.codename_entry.delete(0, "end")
             self.status_var.set("Player ID must be an integer.")
@@ -263,18 +258,18 @@ class EntryScreen(tk.Frame):
             status, db_codename = controller.dbGetCodename(player_id)
             
             if status == "found" and db_codename:
-                # Player exists in database - KEEP FIELD UNLOCKED
+                # Player exists in database 
                 self.player_in_db = True
                 self.db_codename = db_codename
               
-                self.codename_entry.configure(state="normal")  # CHANGED: Keep unlocked!
+                self.codename_entry.configure(state="normal")  #Keep field unlocked!
                 self.codename_entry.delete(0, "end")
                 self.codename_entry.insert(0, db_codename)
                 self.codename_entry.configure(state="disabled")
 
               
                 # Show existing player message
-                self.status_var.set(f"⚠ Player ID {player_id} exists with codename '{db_codename}'. Use 'Update Codename' to change it.")
+                self.status_var.set(f" Player ID {player_id} exists with codename '{db_codename}'. Use 'Update Codename' to change it.")
                 
             elif status == "not_found":
                 # Player not in database
@@ -296,6 +291,7 @@ class EntryScreen(tk.Frame):
             else:
                 # Unknown status
                 self.player_in_db = False
+                self.db_codename = None
                 self.codename_entry.configure(state="normal")
                 self.codename_entry.delete(0, "end")
                 self.status_var.set(f"Unknown database status: {status}")
@@ -303,6 +299,7 @@ class EntryScreen(tk.Frame):
         except Exception as e:
             # Unexpected error
             self.player_in_db = False
+            self.db_codename = None
             self.codename_entry.configure(state="normal")
             self.codename_entry.delete(0, "end")
             self.status_var.set(f"Error: {e}")
@@ -331,7 +328,6 @@ class EntryScreen(tk.Frame):
             self.status_var.set(f"{team} team is full ({TEAM_ROWS} players).")
             return
 
-        # CHANGED: Block adding if player already exists in DB
         if self.player_in_db:
             #use the existing codename
             codename_to_use = (self.db_codename or self.codename_entry.get().strip())
@@ -355,13 +351,13 @@ class EntryScreen(tk.Frame):
                 status = controller.dbInsertPlayer(player_id, codename_to_use)
                 
                 if status == "success":
-                    self.status_var.set(f"✓ New player added to DB as {codename_to_use}")
+                    self.status_var.set(f" New player added to DB as {codename_to_use}")
                 elif status == "duplicate":
                     # This shouldn't happen since we check self.player_in_db above, but just in case
-                    self.status_var.set(f"⚠ Player {player_id} already exists in DB")
+                    self.status_var.set(f" Player {player_id} already exists in DB")
                     return
                 else:  # db_error
-                    self.status_var.set(f"✗ Database error - player not saved")
+                    self.status_var.set(f" Database error - player not saved")
                     return
             except Exception as e:
                 self.status_var.set(f"Error: {e}")
@@ -383,14 +379,14 @@ class EntryScreen(tk.Frame):
         self.codename_entry.delete(0, "end")
         self.equipment_id_entry.delete(0, "end")
 
-        # Reset DB flag for next entry
+        # Reset the database flag for next entry
         self.player_in_db = False
         self.db_codename = None
 
         self.status_var.set(f"Added {codename_to_use} (Player {player_id}) to {team} with Equip {equipment_id}")
 
     def on_update_player(self):
-        """NEW SPRINT 2 REQUIREMENT: Update an existing player's codename in the database"""
+        """Update an existing player's codename in the database"""
         # Validate player ID
         try:
             player_id = int(self.player_id_entry.get().strip())
@@ -421,19 +417,19 @@ class EntryScreen(tk.Frame):
             status = controller.dbUpdatePlayer(player_id, new_codename)
             
             if status == "success":
-                self.status_var.set(f"✓ Player {player_id} codename updated to: {new_codename}")
+                self.status_var.set(f" Player {player_id} codename updated to: {new_codename}")
                 # Refresh the player info to show updated codename
                 self.on_player_id_changed()
             elif status == "not_found":
-                self.status_var.set(f"⚠ Player {player_id} not found in database - cannot update")
+                self.status_var.set(f" Player {player_id} not found in database - cannot update")
             else:  # db_error
-                self.status_var.set(f"✗ Database error - update failed")
+                self.status_var.set(f" Database error - update failed")
                 
         except Exception as e:
             self.status_var.set(f"Error updating player: {e}")
 
     def on_f1(self):
-        # Placeholder for later (already on entry screen)
+        # Placeholder for later 
         self.status_var.set("Already on Entry screen.")
 
     def on_f12(self):
@@ -486,7 +482,7 @@ class ActionScreen(tk.Frame):
 
         tk.Label(
             self,
-            text="GAME ACTION SCREEN (placeholder)",
+            text="GAME ACTION SCREEN (just a placeholder)",
             fg="white",
             bg="black",
             font=("Times New Roman", 28, "bold")
@@ -516,7 +512,7 @@ def startApp():
     footer = tk.Frame(root, bg="black")
     footer.pack(side="bottom", fill="x")
 
-    # --- IP CONFIGURATION (stays on bottom always) ---
+    #Ip configuration
     ttk.Label(footer, text="Network IP:").pack(side=tk.LEFT, padx=6, pady=6)
 
     ip_entry = ttk.Entry(footer, width=20)
