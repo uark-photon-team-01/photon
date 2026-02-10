@@ -5,6 +5,7 @@ The Sprint 2 requirements for this file are the following:
 - F12 clears all entries (it will call the controller)
 - F5 starts game (switch to action screen later)
 - Simplified to ONE button: Add Player handles all scenarios
+- NEW: Track used Player IDs to prevent duplicates in the same game session
 
 Jim's starter material will be used here.
 - In Jim's repo there are assets & screen references:
@@ -36,6 +37,9 @@ class EntryScreen(tk.Frame):
         # Each entry: (player_id:int, codename:str, equipment_id:int)
         self.red_roster = []
         self.green_roster = []
+
+        # NEW: Track which Player IDs have been used in this game session
+        self.used_player_ids = set()
 
         self.player_in_db = False
         self.db_codename = None #stores the codename from the database when a player is found.
@@ -264,6 +268,16 @@ class EntryScreen(tk.Frame):
             self.status_var.set("Player ID must be an integer.")
             return
 
+        # NEW: Check if this Player ID was already used in this game session
+        if player_id in self.used_player_ids:
+            self.player_in_db = False
+            self.db_codename = None
+            self.codename_was_modified = False
+            self.codename_entry.configure(state="normal")
+            self.codename_entry.delete(0, "end")
+            self.status_var.set(f"⚠ Player ID {player_id} already used in this game! Choose a different ID.")
+            return
+
         # Ask controller for codename with NEW STATUS CODES
         try:
             status, db_codename = controller.dbGetCodename(player_id)
@@ -325,6 +339,8 @@ class EntryScreen(tk.Frame):
         1. Player exists, codename NOT modified → Use existing codename (no DB update)
         2. Player exists, codename WAS modified → Update codename in DB
         3. Player doesn't exist → Insert new player into DB
+        
+        NEW: Also prevents duplicate Player IDs in the same game session
         """
         team = self.team_var.get().strip().upper()
 
@@ -339,6 +355,11 @@ class EntryScreen(tk.Frame):
             equipment_id = int(self.equipment_id_entry.get().strip())
         except ValueError:
             self.status_var.set("Equipment ID must be an integer.")
+            return
+
+        # NEW: Check if this Player ID was already used in this game session
+        if player_id in self.used_player_ids:
+            self.status_var.set(f"⚠ Player ID {player_id} already used in this game! Choose a different ID.")
             return
 
         # Get current codename from UI
@@ -404,6 +425,10 @@ class EntryScreen(tk.Frame):
 
         # Add to local roster for display
         roster.append((player_id, codename_to_use, equipment_id))
+        
+        # NEW: Mark this Player ID as used in this game session
+        self.used_player_ids.add(player_id)
+        
         self.refresh_tables()
 
         # Clear inputs for next entry
@@ -428,6 +453,10 @@ class EntryScreen(tk.Frame):
         controller.clearItAll()
         self.red_roster.clear()
         self.green_roster.clear()
+        
+        # NEW: Clear the used Player IDs set
+        self.used_player_ids.clear()
+        
         self.refresh_tables()
         self.status_var.set("Cleared all entries.")
 
