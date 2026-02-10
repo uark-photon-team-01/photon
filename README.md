@@ -26,6 +26,33 @@ It will ask the password for student type "student" (ignore the air quotes).
 - NOTE: This doesn't always occur when first starting the game. Sometimes everything just loads automatically.
 
 #
+Test network code 
+
+In Terminal A type
+cd ~/photon
+pkill -f "python3 main.py" 2>/dev/null || true
+clear
+python3 main.py
+
+-You should see one listener line for this run
+
+Add a Player then verify the broadcast
+In the game add a player for the red team, afterwards you should see a broadcast line in Terminal A.
+
+Force a receive line in the terminal
+In terminal B type: echo -n "TEST123" | nc -u -w1 127.0.0.1 7501
+Back in Terminal A, you should see received line now! Yay.
+
+Confirm an ene-to-end IP change
+In the game, change the Network IP to 127.0.0.2, then click Set Network IP
+Add a player for the red team.
+
+Terminal A should show: IP change line & a broadcast line now using 127.0.0.2:7500
+
+
+
+
+#
 
 
 **Use this command to run the program**
