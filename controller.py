@@ -98,7 +98,7 @@ def addPlayerToTeam(team, playerID, codename, equipmentID):
 
 def dbGetCodename(playerID):
     """
-    Database Function - NOW CONNECTED TO REAL POSTGRESQL!
+  
     
     This searches the PostgreSQL table and returns a codename.
 
@@ -119,7 +119,7 @@ def dbGetCodename(playerID):
 
 def dbInsertPlayer(playerID, codename):
     """
-    Database Function - NOW CONNECTED TO REAL POSTGRESQL!
+  
     
     This inserts a new player into the database.
     
