@@ -38,6 +38,7 @@ class EntryScreen(tk.Frame):
         self.green_roster = []
 
         self.player_in_db = False
+        self.db_codename = None #stores the codename from the database when a player is found.
 
         # -------------------------
         # Top Title Area
@@ -264,15 +265,21 @@ class EntryScreen(tk.Frame):
             if status == "found" and db_codename:
                 # Player exists in database - KEEP FIELD UNLOCKED
                 self.player_in_db = True
+                self.db_codename = db_codename
+              
                 self.codename_entry.configure(state="normal")  # CHANGED: Keep unlocked!
                 self.codename_entry.delete(0, "end")
                 self.codename_entry.insert(0, db_codename)
+                self.codename_entry.configure(state="disabled")
+
+              
                 # Show existing player message
                 self.status_var.set(f"⚠ Player ID {player_id} exists with codename '{db_codename}'. Use 'Update Codename' to change it.")
                 
             elif status == "not_found":
                 # Player not in database
                 self.player_in_db = False
+                self.db_codename = None
                 self.codename_entry.configure(state="normal")
                 self.codename_entry.delete(0, "end")
                 self.status_var.set("Player not found. Enter codename to add new player.")
@@ -281,6 +288,7 @@ class EntryScreen(tk.Frame):
             elif status == "db_error":
                 # Database error occurred
                 self.player_in_db = False
+                self.db_codename = None
                 self.codename_entry.configure(state="normal")
                 self.codename_entry.delete(0, "end")
                 self.status_var.set("⚠ Database error! Check PostgreSQL connection.")
@@ -317,48 +325,53 @@ class EntryScreen(tk.Frame):
             self.status_var.set("Equipment ID must be an integer.")
             return
 
-        # Read codename from UI
-        codename_to_use = self.codename_entry.get().strip()
-
-        # If no codename entered, require it
-        if not codename_to_use:
-            self.status_var.set("Please enter a codename.")
+        # Update UI roster
+        roster = self.red_roster if team == "RED" else self.green_roster
+        if len(roster) >= TEAM_ROWS:
+            self.status_var.set(f"{team} team is full ({TEAM_ROWS} players).")
             return
 
         # CHANGED: Block adding if player already exists in DB
         if self.player_in_db:
-            self.status_var.set(f"⚠ Cannot add - Player ID {player_id} already exists! Use 'Update Codename' button instead.")
-            return
+            #use the existing codename
+            codename_to_use = (self.db_codename or self.codename_entry.get().strip())
+            # This just makes sure there are no duplicate inserts
+            if not codename_to_use:
+                self.status_var.set("This player exists in the database but its codename is missing. Please enter the Player ID again.")
+                return
 
-        # Player doesn't exist - insert new player
-        try:
-            status = controller.dbInsertPlayer(player_id, codename_to_use)
-            
-            if status == "success":
-                self.status_var.set(f"✓ New player added to DB as {codename_to_use}")
-            elif status == "duplicate":
-                # This shouldn't happen since we check self.player_in_db above, but just in case
-                self.status_var.set(f"⚠ Player {player_id} already exists in DB")
+            #info mesage to the player
+            self.status_var.set(f"The existing DB codename '{codename_to_use}' will be used for Player {player_id}.")
+
+        else:
+            # Read codename from UI
+            codename_to_use = self.codename_entry.get().strip()
+            # Give new players a codename, then insert them
+            if not codename_to_use:
+                self.status_var.set("Please enter a codename for your New Player.")
                 return
-            else:  # db_error
-                self.status_var.set(f"✗ Database error - player not saved")
+  
+            try:
+                status = controller.dbInsertPlayer(player_id, codename_to_use)
+                
+                if status == "success":
+                    self.status_var.set(f"✓ New player added to DB as {codename_to_use}")
+                elif status == "duplicate":
+                    # This shouldn't happen since we check self.player_in_db above, but just in case
+                    self.status_var.set(f"⚠ Player {player_id} already exists in DB")
+                    return
+                else:  # db_error
+                    self.status_var.set(f"✗ Database error - player not saved")
+                    return
+            except Exception as e:
+                self.status_var.set(f"Error: {e}")
                 return
-        except Exception as e:
-            self.status_var.set(f"Error: {e}")
-            return
 
         # Add to controller team list (broadcast handled inside controller)
         try:
             controller.addPlayerToTeam(team, player_id, codename_to_use, equipment_id)
         except Exception as e:
             self.status_var.set(f"Controller addPlayerToTeam failed: {e}")
-            return
-
-        # Update UI roster
-        roster = self.red_roster if team == "RED" else self.green_roster
-
-        if len(roster) >= TEAM_ROWS:
-            self.status_var.set(f"{team} team is full ({TEAM_ROWS} players).")
             return
 
         roster.append((player_id, codename_to_use, equipment_id))
@@ -372,6 +385,7 @@ class EntryScreen(tk.Frame):
 
         # Reset DB flag for next entry
         self.player_in_db = False
+        self.db_codename = None
 
         self.status_var.set(f"Added {codename_to_use} (Player {player_id}) to {team} with Equip {equipment_id}")
 
