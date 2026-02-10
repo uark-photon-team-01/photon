@@ -164,7 +164,7 @@ class EntryScreen(tk.Frame):
         ).pack(fill="x", pady=(8, 10))
 
         # Initial paint
-        self.refresh_tables()
+        self.after_idle(self.refresh_tables)
 
     def _build_team_panel(self, parent, team_name, header_bg, outline):
         """
@@ -504,7 +504,18 @@ class ActionScreen(tk.Frame):
 def startApp():
     root = tk.Tk()
     root.title("Team One's Photon Laser Tag")
-    root.geometry("1100x760")
+  
+    # Fit to VM display so the active window is not partially off-screen
+    root.update_idletasks()
+    sw = root.winfo_screenwidth()
+    sh = root.winfo_screenheight()
+
+    w = min(1100, sw - 60)
+    h = min(760, sh - 100)
+    x = max(0, (sw - w) // 2)
+    y = max(0, (sh - h) // 2)
+
+    root.geometry(f"{w}x{h}+{x}+{y}")
 
     content = tk.Frame(root, bg="black")
     content.pack(side="top", fill="both", expand=True)
@@ -528,10 +539,18 @@ def startApp():
     current_screen = {"screen": None}
 
     def show_screen(new_screen):
-        if current_screen["screen"] is not None:
-            current_screen["screen"].destroy()
+        old = current_screen["screen"]
+        if old is not None:
+            old.pack_forget()
+            old.destroy()
+    
         current_screen["screen"] = new_screen
         new_screen.pack(in_=content, fill="both", expand=True)
+    
+        # This forces the new layout & redraw in the Virtual Machine 
+        root.update_idletasks()
+        root.after_idle(new_screen.update_idletasks)
+
     
     def f12Clear(event):
         if current_screen["screen"] is not None and hasattr(current_screen["screen"], "on_f12"):
@@ -548,7 +567,7 @@ def startApp():
             current_screen["screen"].on_f1()
 
     def f3Start(event):
-        # Placeholder: same behavior as F5 for now
+        # Just a Placeholder: same behavior as F5 for now
         if current_screen["screen"] is not None and hasattr(current_screen["screen"], "on_f5"):
             current_screen["screen"].on_f5()
 
@@ -596,14 +615,18 @@ def startApp():
             def backToEntry():
                 entry = EntryScreen(content, on_start_game=goToAction)
                 show_screen(entry)
-                root.update_idletasks() #will help load entry screen faster
             show_screen(ActionScreen(content, on_return_entry=backToEntry))
 
-        entry = EntryScreen(content, on_start_game=goToAction)
-        show_screen(entry)
+        def build_entry():
+            entry = EntryScreen(content, on_start_game=goToAction)
+            show_screen(entry)
+
+        # After Tk finishes the event loop cycle the entry will be built
+        root.after_idle(build_entry)
 
     root.after(MS_SplashTime, goToBegin)
 
-    root.after(100, controller.netBeginUDP_Listener)
+    # The listener starts after the splash/entry render path begins
+    root.after(MS_SplashTime + 300, controller.netBeginUDP_Listener)
 
     root.mainloop()
