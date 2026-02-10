@@ -82,4 +82,4 @@ Stubs / placeholder functions (The Database & Network will fulfill these later):
 - dbInsertPlayer(playerID, codename)
 - netSetIp(ip)
 - netBroadcastEquipment(equipmentID)
-- netStartUDP_Listener()
+- netBeginUDP_Listener()
