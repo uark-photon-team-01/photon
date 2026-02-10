@@ -262,7 +262,7 @@ class EntryScreen(tk.Frame):
                 self.player_in_db = True
                 self.db_codename = db_codename
               
-                self.codename_entry.configure(state="normal")  #Keep field unlocked!
+                self.codename_entry.configure(state="normal")  
                 self.codename_entry.delete(0, "end")
                 self.codename_entry.insert(0, db_codename)
                 self.codename_entry.configure(state="disabled")
@@ -440,6 +440,15 @@ class EntryScreen(tk.Frame):
         self.refresh_tables()
         self.status_var.set("Cleared all entries.")
 
+        #this avoids stale lookup
+        self.player_in_db = False
+        self.db_codename = None
+        
+        self.player_id_entry.delete(0, "end")
+        self.codename_entry.configure(state="normal")
+        self.codename_entry.delete(0, "end")
+        self.equipment_id_entry.delete(0, "end")
+
     def on_f5(self):
         try:
             controller.changePhase("ACTION")
@@ -504,18 +513,23 @@ class ActionScreen(tk.Frame):
 def startApp():
     root = tk.Tk()
     root.title("Team One's Photon Laser Tag")
-  
-    # Fit to VM display so the active window is not partially off-screen
-    root.update_idletasks()
-    sw = root.winfo_screenwidth()
-    sh = root.winfo_screenheight()
 
-    w = min(1100, sw - 60)
-    h = min(760, sh - 100)
-    x = max(0, (sw - w) // 2)
-    y = max(0, (sh - h) // 2)
+    # this hides the  window  at first so user doesn't see ugly first draw in VM
+    root.withdraw()
 
-    root.geometry(f"{w}x{h}+{x}+{y}")
+    def force_window_geometry():
+        root.update_idletasks()
+        sw = root.winfo_screenwidth()
+        sh = root.winfo_screenheight()
+
+        # Fit to VM display so the active window is not partially off-screen
+        w = min(1100, sw - 40)
+        h = min(760, sh - 80)
+        x = max(0, (sw - w) // 2)
+        y = max(0, (sh - h) // 2)
+
+        root.geometry(f"{w}x{h}+{x}+{y}")
+        root.minsize(980, 680)
 
     content = tk.Frame(root, bg="black")
     content.pack(side="top", fill="both", expand=True)
@@ -615,11 +629,19 @@ def startApp():
             def backToEntry():
                 entry = EntryScreen(content, on_start_game=goToAction)
                 show_screen(entry)
+                # just reapply the geometry after the switch back
+                root.after(0, force_window_geometry)
+                root.after(120, force_window_geometry)
+              
             show_screen(ActionScreen(content, on_return_entry=backToEntry))
+            root.after(0, force_window_geometry)
+            root.after(120, force_window_geometry)
 
         def build_entry():
             entry = EntryScreen(content, on_start_game=goToAction)
             show_screen(entry)
+            root.after(0, force_window_geometry)
+            root.after(120, force_window_geometry)
 
         # After Tk finishes the event loop cycle the entry will be built
         root.after_idle(build_entry)
@@ -628,5 +650,11 @@ def startApp():
 
     # The listener starts after the splash/entry render path begins
     root.after(MS_SplashTime + 300, controller.netBeginUDP_Listener)
+
+    # the geometry is applied multiple times and aftwerwards the window is shown
+    root.after(0, force_window_geometry)
+    root.after(120, force_window_geometry)
+    root.after(350, force_window_geometry)
+    root.deiconify()
 
     root.mainloop()
