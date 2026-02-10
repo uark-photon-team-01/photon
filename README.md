@@ -19,9 +19,10 @@ It will ask the password for student type "student" (ignore the air quotes).
 
 
 
-**To run the install script, type the following into the command line:**
+**IMPORTANT INFO**
 
-- bash install.sh
+- For some reason when starting the app not all of the widgets are drawn, just drag the window and resize it so everything fits.
+- when you drag the game window Linux/VirtualBox sends a fresh repaint event, which forces all widgets to draw.
 
 #
 
