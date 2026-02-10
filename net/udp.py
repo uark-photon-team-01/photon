@@ -49,6 +49,7 @@ def netSetIp(ip):
     """
     global networkIP
     networkIP = str(ip).strip()
+    print(f" The UDP network IP set to {networkIP}")
 
 
 def netBroadcastEquipment(equipmentID):
