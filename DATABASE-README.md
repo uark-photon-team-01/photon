@@ -211,14 +211,14 @@ You can set a different network IP using the "Set Network IP" field at the botto
 ## Sprint 2 Deliverables
 
 This sprint includes:
-- ✅ Git repository with team member real names
-- ✅ Splash screen (3-second logo display)
-- ✅ Player entry screen (add players to teams)
-- ✅ Database integration (PostgreSQL player storage)
-- ✅ UDP socket implementation (equipment broadcast)
-- ✅ Network selection option (configurable IP address)
-- ✅ Install script for dependencies
-- ✅ README with run instructions and team member table
+-  Git repository with team member real names
+-  Splash screen (3-second logo display)
+-  Player entry screen (add players to teams)
+-  Database integration (PostgreSQL player storage)
+-  UDP socket implementation (equipment broadcast)
+-  Network selection option (configurable IP address)
+-  Install script for dependencies
+-  README with run instructions and team member table
 
 ---
 
