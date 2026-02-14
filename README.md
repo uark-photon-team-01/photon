@@ -15,7 +15,7 @@
 3. sudo apt-get install -y git python3 python3-pip python3-tk netcat-openbsd
 4. git clone https://github.com/uark-photon-team-01/photon.git 
 5. cd ~/photon
-6. 
+6. ls
 7. bash install.sh
 
 **Before you run anything, make sure to pull the latest code (Section B)**
