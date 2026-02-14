@@ -27,18 +27,18 @@
 5. git clean -fd
 6. git rev-parse --short HEAD
 
-**If internet/DNS breaks (git pull says “Could not resolve host”), type in the following (Section C).
+**If internet/DNS breaks (git pull says “Could not resolve host”), type in the following (Section C).**
 
-After entering in this code, pull the latest code again. (Section B)**
+**After entering in this code, pull the latest code again. (Section B)**
 
 1. sudo bash -c 'cat > /etc/resolv.conf <<EOF
 2. nameserver 8.8.8.8
 3. nameserver 1.1.1.1
 4. EOF'
 
-**Before you start the game, let's clear the database (Section D)
+**Before you start the game, let's clear the database (Section D)**
 
-This count should be zero after entering these commands.**
+**This count should be zero after entering these commands.**
 
 1. sudo systemctl start postgresql
 2. PGPASSWORD=student psql -h localhost -U student -d photon -c "CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, codename VARCHAR(255));"
