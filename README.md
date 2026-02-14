@@ -4,6 +4,7 @@
 **Follow these commands EXACTLY (ignore the parentheses)**
 
 **To log into the Virtual Machine type "student" for the username and password, afterwards pressing enter.**
+
 **Then, once you are in press the "Terminal Emulator" (Bottom of the screen) (Section A)**
 
 1. cd ~ 
@@ -17,7 +18,7 @@
 6. 
 7. bash install.sh
 
-**Before you run anyhting, make sure to pull the latest code (Section B)**
+**Before you run anything, make sure to pull the latest code (Section B)**
 
 1. cd ~/photon
 2. git checkout main
@@ -27,6 +28,7 @@
 6. git rev-parse --short HEAD
 
 **If internet/DNS breaks (git pull says “Could not resolve host”), type in the following (Section C).
+
 After entering in this code, pull the latest code again. (Section B)**
 
 1. sudo bash -c 'cat > /etc/resolv.conf <<EOF
@@ -35,6 +37,7 @@ After entering in this code, pull the latest code again. (Section B)**
 4. EOF'
 
 **Before you start the game, let's clear the database (Section D)
+
 This count should be zero after entering these commands.**
 
 1. sudo systemctl start postgresql
