@@ -1,15 +1,15 @@
 **How to run the program 101**
 -----
 
-**Follow these commands EXACTLY (ignore the parentheses)
+**Follow these commands EXACTLY (ignore the parentheses)**
 
-To log into the Virtual Machine type "student" for the username and password, afterwards pressing enter.
-Then, once you are in press the "Terminal Emulator" (Bottom of the screen) (Section A)**
+**To log into the Virtual Machine type "student" for the username and password, afterwards pressing enter.**
+**Then, once you are in press the "Terminal Emulator" (Bottom of the screen) (Section A)**
 
 1. cd ~ 
 2. sudo apt-get update 
 
-It will ask the password for student type "student" (ignore the air quotes).
+**It will ask the password for student type "student" (ignore the air quotes).**
 
 3. sudo apt-get install -y git python3 python3-pip python3-tk netcat-openbsd
 4. git clone https://github.com/uark-photon-team-01/photon.git 
@@ -26,17 +26,16 @@ It will ask the password for student type "student" (ignore the air quotes).
 5. git clean -fd
 6. git rev-parse --short HEAD
 
-**If internet/DNS breaks (git pull says “Could not resolve host”), type in the following (Section C).
-
-After entering in this code, pull the latest code again. (Section B)**
+**If internet/DNS breaks (git pull says “Could not resolve host”), type in the following (Section C).**
+**After entering in this code, pull the latest code again. (Section B)**
 
 1. sudo bash -c 'cat > /etc/resolv.conf <<EOF
 2. nameserver 8.8.8.8
 3. nameserver 1.1.1.1
 4. EOF'
 
-**Before you start the game, let's clear the database (Section D)
-This count should be zero after entering these commands.**
+**Before you start the game, let's clear the database (Section D)**
+**This count should be zero after entering these commands.**
 
 1. sudo systemctl start postgresql
 2. PGPASSWORD=student psql -h localhost -U student -d photon -c "CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, codename VARCHAR(255));"
