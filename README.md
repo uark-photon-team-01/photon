@@ -6,28 +6,31 @@ Follow these commands EXACTLY (ignore the parentheses)
 To log into the Virtual Machine type "student" for the username and password, afterwards pressing enter.
 Then, once you are in press the "Terminal Emulator" (Bottom of the screen) (Section A)
 
-1. cd ~ (Go Home)
-2. sudo apt-get update (Install basic tools)
+cd ~ 
+sudo apt-get update 
+
 It will ask the password for student type "student" (ignore the air quotes).
-3. sudo apt-get install -y git python3 python3-pip python3-tk netcat-openbsd
-4. git clone https://github.com/uark-photon-team-01/photon.git (Clone our repo)
-5. cd ~/photon
-6. ls
-7. bash install.sh
+
+sudo apt-get install -y git python3 python3-pip python3-tk netcat-openbsd
+git clone https://github.com/uark-photon-team-01/photon.git 
+cd ~/photon
+ls
+bash install.sh
 
 Before you run anyhting, make sure to pull the latest code (Section B)
 
-1. cd ~/photon
-2. git checkout main
-3. git fetch origin
-4. git reset --hard origin/main
-5. git clean -fd
-6. git rev-parse --short HEAD
+cd ~/photon
+git checkout main
+git fetch origin
+git reset --hard origin/main
+git clean -fd
+git rev-parse --short HEAD
 
-If internet/DNS breaks (git pull says “Could not resolve host”), type in the following (Section C)
+If internet/DNS breaks (git pull says “Could not resolve host”), type in the following (Section C).
+
 After entering in this code, pull the latest code again. (Section B)
 
-1. sudo bash -c 'cat > /etc/resolv.conf <<EOF
+sudo bash -c 'cat > /etc/resolv.conf <<EOF
 nameserver 8.8.8.8
 nameserver 1.1.1.1
 EOF'
@@ -35,15 +38,16 @@ EOF'
 Before you start the game, let's clear the database (Section D)
 This count should be zero after entering these commands.
 
-1. sudo systemctl start postgresql
-2. PGPASSWORD=student psql -h localhost -U student -d photon -c "CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, codename VARCHAR(255));"
-3. PGPASSWORD=student psql -h localhost -U student -d photon -c "TRUNCATE TABLE players;"
-4. PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT COUNT(*) FROM players;"
+sudo systemctl start postgresql
+PGPASSWORD=student psql -h localhost -U student -d photon -c "CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, codename VARCHAR(255));"
+PGPASSWORD=student psql -h localhost -U student -d photon -c "TRUNCATE TABLE players;"
+PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT COUNT(*) FROM players;"
 
 Now terminate old processes and run the program (Section E)
-1. cd ~/photon
-2. pkill -f "python3 main.py" 2>/dev/null || true
-3. python3 main.py
+
+cd ~/photon
+pkill -f "python3 main.py" 2>/dev/null || true
+python3 main.py
 
 **IMPORTANT INFO**
 
