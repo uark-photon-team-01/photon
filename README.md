@@ -7,6 +7,8 @@ To log into the Virtual Machine type "student" for the username and password, af
 
 Then, once you are in press the "Terminal Emulator" (Bottom of the screen) 
 
+-----
+
 **Setup Up The Program (Section A)**
 
 1. cd ~ 
