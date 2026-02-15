@@ -10,7 +10,7 @@
 1. cd ~ 
 2. sudo apt-get update 
 
-**It will ask the password for student type "student" (ignore the air quotes).**
+It will ask the password for student type "student" (ignore the air quotes).
 
 3. sudo apt-get install -y git python3 python3-pip python3-tk netcat-openbsd
 4. git clone https://github.com/uark-photon-team-01/photon.git 
@@ -31,9 +31,9 @@
 
 -----
 
-**If internet/DNS breaks (git pull says “Could not resolve host”), type in the following (Section C).**
+**If internet/DNS breaks (git pull says “Could not resolve host”) type in the following. (Section C).**
 
-**After entering in this code, pull the latest code again. (Section B)**
+After entering in this code, pull the latest code again. (Section B)
 
 1. sudo bash -c 'cat > /etc/resolv.conf <<EOF
 2. nameserver 8.8.8.8
@@ -44,7 +44,7 @@
 
 **Before you start the game, let's clear the database (Section D)**
 
-**This count should be zero after entering these commands.**
+This count should be zero after entering these commands.
 
 1. sudo systemctl start postgresql
 2. PGPASSWORD=student psql -h localhost -U student -d photon -c "CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, codename VARCHAR(255));"
@@ -64,7 +64,7 @@
 **IMPORTANT INFO**
 
 - For some reason when starting the app not all of the widgets are drawn, just drag the window and resize it so everything fits.
-- when you drag the game window Linux/VirtualBox sends a fresh repaint event, which forces all widgets to draw.
+- When you drag the game window Linux/VirtualBox sends a fresh repaint event, which forces all widgets to draw.
 - NOTE: This doesn't always occur when first starting the game. Sometimes everything just loads automatically.
 
 #
@@ -87,6 +87,8 @@ In the game, add a player for the red team, afterwards you should see a broadcas
 -----
 
 **Force a receive line in the terminal**
+
+Open a second terminal.
 
 In terminal B type: 
 - echo -n "TEST123" | nc -u -w1 127.0.0.1 7501
