@@ -268,15 +268,9 @@ class EntryScreen(tk.Frame):
             self.status_var.set("Player ID must be an integer.")
             return
 
-        # NEW: Check if this Player ID was already used in this game session
+        # If ID is already in the game,just give the player the option to edit so there cna be updates
         if player_id in self.used_player_ids:
-            self.player_in_db = False
-            self.db_codename = None
-            self.codename_was_modified = False
-            self.codename_entry.configure(state="normal")
-            self.codename_entry.delete(0, "end")
-            self.status_var.set(f"⚠ Player ID {player_id} already used in this game! Choose a different ID.")
-            return
+            self.status_var.set(f" This game already has the following Player ID {player_id}. Edit the codename and click Add Player to update.")
 
         # Ask controller for codename with NEW STATUS CODES
         try:
@@ -340,7 +334,7 @@ class EntryScreen(tk.Frame):
         2. Player exists, codename WAS modified → Update codename in DB
         3. Player doesn't exist → Insert new player into DB
         
-        NEW: Also prevents duplicate Player IDs in the same game session
+      Also prevents duplicate Player IDs in the same game session
         """
         team = self.team_var.get().strip().upper()
 
@@ -357,16 +351,48 @@ class EntryScreen(tk.Frame):
             self.status_var.set("Equipment ID must be an integer.")
             return
 
-        # NEW: Check if this Player ID was already used in this game session
-        if player_id in self.used_player_ids:
-            self.status_var.set(f"⚠ Player ID {player_id} already used in this game! Choose a different ID.")
-            return
-
         # Get current codename from UI
         codename_to_use = self.codename_entry.get().strip()
-        
         if not codename_to_use:
             self.status_var.set("Please enter a codename.")
+            return
+
+        # If player is in the game roster, then update it
+        if player_id in self.used_player_ids:
+            try:
+                status = controller.dbUpdatePlayer(player_id, codename_to_use)
+                if status != "success":
+                    self.status_var.set(f"Player {player_id} could not be updated in the database")
+                    return
+            except Exception as e:
+                self.status_var.set(f"There was an error updating: {e}")
+                return
+        
+            # codename  is updated in local roster display
+            updated = False
+            for i, (pid, _code, eq) in enumerate(self.red_roster):
+                if pid == player_id:
+                    self.red_roster[i] = (pid, codename_to_use, eq)
+                    updated = True
+                    break
+        
+            if not updated:
+                for i, (pid, _code, eq) in enumerate(self.green_roster):
+                    if pid == player_id:
+                        self.green_roster[i] = (pid, codename_to_use, eq)
+                        break
+        
+            self.refresh_tables()
+            self.status_var.set(f"Updated Player {player_id} -> '{codename_to_use}'")
+        
+            # clear the inputs
+            self.player_id_entry.delete(0, "end")
+            self.codename_entry.delete(0, "end")
+            self.equipment_id_entry.delete(0, "end")
+            self.player_in_db = False
+            self.db_codename = None
+            self.codename_was_modified = False
+            self.player_id_entry.focus_set()
             return
 
         # Update UI roster
@@ -384,19 +410,19 @@ class EntryScreen(tk.Frame):
                     status = controller.dbUpdatePlayer(player_id, codename_to_use)
                     
                     if status == "success":
-                        self.status_var.set(f"✓ Updated Player {player_id} to '{codename_to_use}'")
+                        self.status_var.set(f" Updated Player {player_id} to '{codename_to_use}'")
                     elif status == "not_found":
-                        self.status_var.set(f"⚠ Player {player_id} not found - cannot update")
+                        self.status_var.set(f" Player {player_id} not found - cannot update")
                         return
                     else:  # db_error
-                        self.status_var.set(f"⚠ Database error - update failed")
+                        self.status_var.set(f" Database error - update failed")
                         return
                 except Exception as e:
                     self.status_var.set(f"Error updating: {e}")
                     return
             else:
                 # SCENARIO 1: Use existing codename (no DB update needed)
-                self.status_var.set(f"✓ Using existing codename '{codename_to_use}' for Player {player_id}")
+                self.status_var.set(f" Using existing codename '{codename_to_use}' for Player {player_id}")
 
         # SCENARIO 3: Player doesn't exist - insert new player
         else:
@@ -404,13 +430,13 @@ class EntryScreen(tk.Frame):
                 status = controller.dbInsertPlayer(player_id, codename_to_use)
                 
                 if status == "success":
-                    self.status_var.set(f"✓ New player '{codename_to_use}' added to database")
+                    self.status_var.set(f" New player '{codename_to_use}' added to database")
                 elif status == "duplicate":
                     # This shouldn't happen since we check self.player_in_db above
-                    self.status_var.set(f"⚠ Player {player_id} already exists in database")
+                    self.status_var.set(f" Player {player_id} already exists in database")
                     return
                 else:  # db_error
-                    self.status_var.set(f"⚠ Database error - player not saved")
+                    self.status_var.set(f" Database error - player not saved")
                     return
             except Exception as e:
                 self.status_var.set(f"Error inserting: {e}")
