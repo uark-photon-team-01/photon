@@ -115,7 +115,40 @@ Terminal A should show: IP change line & a broadcast line now using 127.0.0.2:75
 Great job! Now you know that the network code works properly.
 
 
+#
+**Test the Database Code**
 
+You should already have two terminals open.
+
+Terminal A will run the app (python3 main.py)
+
+Terminal B will run SQL checks (psql commands)
+
+-----
+
+**In Terminal B, clean the test rows**
+
+Please enter the following code:
+- PGPASSWORD=student psql -h localhost -U student -d photon -c "DELETE FROM players WHERE id IN (9901,9902);"
+- PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
+
+You should see 0 rows.
+
+-----
+
+**In Terminal A, Start the App**
+
+Please enter the following code:
+- cd ~/photon
+- pkill -f "python3 main.py" 2>/dev/null || true
+- python3 main.py
+
+-----
+
+
+
+
+#
 
 #
 
