@@ -70,6 +70,8 @@ This count should be zero after entering these commands.
 #
 **Test network code**
 
+NOTE: Terminal A is your original terminal.
+
 In Terminal A type:
 - cd ~/photon
 - pkill -f "python3 main.py" 2>/dev/null || true
