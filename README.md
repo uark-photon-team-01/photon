@@ -52,7 +52,7 @@ After entering in this code, pull the latest code again. (Section B)
 
 **Before you start the game, let's clear the database (Section D)**
 
-Open a second terminal.
+Open a second terminal and type in the code below.
 
 This count should be zero after entering these commands:
 
@@ -64,6 +64,8 @@ This count should be zero after entering these commands:
 -----
 
 **Now terminate old processes and run the program (Section E)**
+
+Go back to the first Terminal and enter the following:
 
 1. cd ~/photon
 2. pkill -f "python3 main.py" 2>/dev/null || true
