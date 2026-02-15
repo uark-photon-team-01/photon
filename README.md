@@ -102,7 +102,7 @@ In Terminal A type:
 - clear
 - python3 main.py
 
-You should see one listener line for this run
+You should see one listener line for this run in Terminal A.
 
 -----
 
