@@ -68,11 +68,13 @@ In Terminal A type:
 
 You should see one listener line for this run
 
+-----
 
 **Add a Player then verify the broadcast**
 
 In the game, add a player for the red team, afterwards you should see a broadcast line in Terminal A.
 
+------
 
 **Force a receive line in the terminal**
 
@@ -80,6 +82,8 @@ In terminal B type:
 - echo -n "TEST123" | nc -u -w1 127.0.0.1 7501
 
 Back in Terminal A, you should see received line now! Yay.
+
+-------
 
 
 **Confirm an end-to-end IP change**
