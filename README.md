@@ -1,11 +1,13 @@
 **How to run the program 101**
 -----
 
-**Follow these commands EXACTLY (ignore the parentheses)**
+**Follow these commands EXACTLY**
 
-**To log into the Virtual Machine type "student" for the username and password, afterwards pressing enter.**
+To log into the Virtual Machine type "student" for the username and password, afterwards pressing enter.
 
-**Then, once you are in press the "Terminal Emulator" (Bottom of the screen) (Section A)**
+Then, once you are in press the "Terminal Emulator" (Bottom of the screen) 
+
+**Setup Up The Program (Section A)**
 
 1. cd ~ 
 2. sudo apt-get update 
