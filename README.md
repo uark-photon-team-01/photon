@@ -11,7 +11,9 @@ Then, once you are in press the "Terminal Emulator" (Bottom of the screen)
 
 **Setup Up The Program (Section A)**
 
-Enter the following lines of code.
+Enter the following lines of code. (You can just copy and paste these lines).
+
+Ignore the numbers please.
 
 1. cd ~ 
 2. sudo apt-get update 
