@@ -57,9 +57,12 @@ Open a second terminal and type in the code below.
 This count should be zero after entering these commands:
 
 1. sudo systemctl start postgresql
-2. PGPASSWORD=student psql -h localhost -U student -d photon -c "CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, codename VARCHAR(255));"
-3. PGPASSWORD=student psql -h localhost -U student -d photon -c "TRUNCATE TABLE players;"
-4. PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT COUNT(*) FROM players;"
+
+It will ask the password for student type "student" (ignore the air quotes).
+
+3. PGPASSWORD=student psql -h localhost -U student -d photon -c "CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, codename VARCHAR(255));"
+4. PGPASSWORD=student psql -h localhost -U student -d photon -c "TRUNCATE TABLE players;"
+5. PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT COUNT(*) FROM players;"
 
 -----
 
