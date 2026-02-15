@@ -112,6 +112,8 @@ In the game, change the Network IP to 127.0.0.2, then click Set Network IP. Now 
 
 Terminal A should show: IP change line & a broadcast line now using 127.0.0.2:7500
 
+Great job! Now you know that the network code works properly.
+
 
 
 
