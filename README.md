@@ -150,7 +150,7 @@ Please enter the following code:
 - PGPASSWORD=student psql -h localhost -U student -d photon -c "DELETE FROM players WHERE id IN (9901,9902);"
 - PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
 
-You should see 0 rows.
+You should see an id | codename table with 0 rows.
 
 -----
 
