@@ -18,6 +18,8 @@
 6. ls
 7. bash install.sh
 
+-----
+
 **Before you run anything, make sure to pull the latest code (Section B)**
 
 1. cd ~/photon
@@ -26,6 +28,8 @@
 4. git reset --hard origin/main
 5. git clean -fd
 6. git rev-parse --short HEAD
+
+-----
 
 **If internet/DNS breaks (git pull says “Could not resolve host”), type in the following (Section C).**
 
@@ -36,6 +40,8 @@
 3. nameserver 1.1.1.1
 4. EOF'
 
+-----
+
 **Before you start the game, let's clear the database (Section D)**
 
 **This count should be zero after entering these commands.**
@@ -45,11 +51,15 @@
 3. PGPASSWORD=student psql -h localhost -U student -d photon -c "TRUNCATE TABLE players;"
 4. PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT COUNT(*) FROM players;"
 
+-----
+
 **Now terminate old processes and run the program (Section E)**
 
 1. cd ~/photon
 2. pkill -f "python3 main.py" 2>/dev/null || true
 3. python3 main.py
+
+----- 
 
 **IMPORTANT INFO**
 
@@ -58,7 +68,7 @@
 - NOTE: This doesn't always occur when first starting the game. Sometimes everything just loads automatically.
 
 #
-**Test network code **
+**Test network code**
 
 In Terminal A type:
 - cd ~/photon
@@ -74,7 +84,7 @@ You should see one listener line for this run
 
 In the game, add a player for the red team, afterwards you should see a broadcast line in Terminal A.
 
-------
+-----
 
 **Force a receive line in the terminal**
 
@@ -83,7 +93,7 @@ In terminal B type:
 
 Back in Terminal A, you should see received line now! Yay.
 
--------
+-----
 
 
 **Confirm an end-to-end IP change**
