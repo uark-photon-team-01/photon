@@ -11,6 +11,8 @@ Then, once you are in press the "Terminal Emulator" (Bottom of the screen)
 
 **Setup Up The Program (Section A)**
 
+Enter the following lines of code.
+
 1. cd ~ 
 2. sudo apt-get update 
 
@@ -35,7 +37,7 @@ It will ask the password for student type "student" (ignore the air quotes).
 
 -----
 
-**If internet/DNS breaks (git pull says “Could not resolve host”) type in the following. (Section C).**
+**If internet/DNS breaks (git pull says “Could not resolve host”), type in the following. (Section C).**
 
 After entering in this code, pull the latest code again. (Section B)
 
