@@ -204,6 +204,11 @@ Just enter the following in Terminal B:
 
 - PGPASSWORD=student psql -h localhost -U student -d photon -c "DELETE FROM players WHERE id IN (9901,9902);"
 
+You should see:
+- (0 rows)
+
+Great job! Now you know that the database code works properly.
+
 -----
 
 
