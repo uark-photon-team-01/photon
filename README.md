@@ -140,6 +140,8 @@ Terminal A will run the app (python3 main.py)
 
 Terminal B will run SQL checks (psql commands)
 
+Now close the app please.
+
 -----
 
 **In Terminal B, clean the test rows**
