@@ -52,7 +52,9 @@ After entering in this code, pull the latest code again. (Section B)
 
 **Before you start the game, let's clear the database (Section D)**
 
-This count should be zero after entering these commands.
+Open a second terminal.
+
+This count should be zero after entering these commands:
 
 1. sudo systemctl start postgresql
 2. PGPASSWORD=student psql -h localhost -U student -d photon -c "CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, codename VARCHAR(255));"
@@ -97,8 +99,6 @@ In the game, add a player for the red team, afterwards you should see a broadcas
 -----
 
 **Force a receive line in the terminal**
-
-Open a second terminal.
 
 In terminal B type: 
 - echo -n "TEST123" | nc -u -w1 127.0.0.1 7501
