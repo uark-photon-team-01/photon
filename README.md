@@ -64,6 +64,13 @@ It will ask the password for student type "student" (ignore the air quotes).
 3. PGPASSWORD=student psql -h localhost -U student -d photon -c "TRUNCATE TABLE players;"
 4. PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT COUNT(*) FROM players;"
 
+You should see:
+
+count
+0
+(1 row)
+
+
 -----
 
 **Now terminate old processes and run the program (Section E)**
