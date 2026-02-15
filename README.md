@@ -174,7 +174,7 @@ You should see:
 9901 | Deadpool
 9902 | Wolverine
 
-Now you can see that the databse is inserts players through the app properly.
+Now you can see that the database is inserts players through the app properly.
 
 -----
 
@@ -198,21 +198,13 @@ Now you can see that the database updates players through the app properly.
 
 -----
 
-**Test to Delete a Player**
+**Clear the Test Data**
 
 Just enter the following in Terminal B:
 
 - PGPASSWORD=student psql -h localhost -U student -d photon -c "DELETE FROM players WHERE id IN (9901,9902);"
 
 -----
-
-
-
-
-
-#
-
-#
 
 
 **Use this command to run the program**
@@ -269,21 +261,14 @@ assets/
   #
 
 
-**Team Info: Github    &    Real Names**
+## Team Info: GitHub and Real Names
 
-CentariB      
-- Centarrius Brooks
-
-WillBoone24
-- Will Boone
-
-EmmaMah258
-- Emma Mahaffey
-
-CollegeBoundCaleb
-- Caleb Carpenter
-  
-
+| GitHub Username   | Real Name          |
+|-------------------|--------------------|
+| CentariB          | Centarrius Brooks  |
+| WillBoone24       | Will Boone         |
+| EmmaMah258        | Emma Mahaffey      |
+| CollegeBoundCaleb | Caleb Carpenter    |
 
 
 
