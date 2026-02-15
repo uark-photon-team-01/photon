@@ -198,7 +198,7 @@ Now you can see that the database is inserts players through the app properly.
 
 **Verify that updates are reflected in the Database**
 
-In the app (Terminal A), update Player 1:
+In the app, update Player 1:
 
 - Player ID: 9901
 - Codename: Gambit
