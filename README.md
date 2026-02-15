@@ -145,6 +145,68 @@ Please enter the following code:
 
 -----
 
+**Add Two players to the app in Terminal A**
+
+Add Player 1 to the Red Team:
+
+- Player ID:  9901
+- Codename: Deadpool
+- Equipment ID: 501
+
+Now, Add Player 2 to the Green Team:
+
+- Player ID: 9902
+- Codename: Wolverine
+- Equipment ID: 502
+
+Click Add Player for each one.
+
+-----
+
+**Verify that the Database is working**
+
+In Terminal B, type the following code:
+
+- PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
+
+You should see:
+
+9901 | Deadpool
+9902 | Wolverine
+
+Now you can see that the databse is inserts players through the app properly.
+
+-----
+
+**Verify that updates are reflected in the Database**
+
+In the app (Terminal A), update Player 1:
+
+- Player ID: 9901
+- Codename: Gambit
+- Equipment ID: 501
+
+Click Add Player, then in Terminal B enter the following: 
+
+- PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT id, codename FROM players WHERE id=9901;"
+
+You should see:
+
+9901 | Gambit
+
+Now you can see that the database updates players through the app properly.
+
+-----
+
+**Test to Delete a Player**
+
+Just enter the following in Terminal B:
+
+- PGPASSWORD=student psql -h localhost -U student -d photon -c "DELETE FROM players WHERE id IN (9901,9902);"
+
+-----
+
+
 
 
 
