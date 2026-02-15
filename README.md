@@ -94,6 +94,8 @@ Go back to the first Terminal and enter the following:
 
 NOTE: Terminal A is your original terminal.
 
+(If you already have just done Section E just ignore this code below)
+
 In Terminal A type:
 - cd ~/photon
 - pkill -f "python3 main.py" 2>/dev/null || true
