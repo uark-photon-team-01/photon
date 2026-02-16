@@ -177,7 +177,7 @@ def updatePlayer(playerID, newCodename):
 
 
 # -----------------------------------------------------------------------------
-# Controller-friendly wrappers (this matches the INTERNALS.md function names)
+# Controller-friendly wrappers 
 # -----------------------------------------------------------------------------
 # These wrappers let the controller keep the stub names from Internals.md.
 # This makes it easy to change names in the future
@@ -265,7 +265,7 @@ def dbUpdatePlayer(playerID, newCodename):
 
 
 # -----------------------------------------------------------------
-# Week 1 proof / quick testing (based on Jim's starter code)
+# Week 1 proof / quick testing 
 # -----------------------------------------------------------------
 
 def testOurConnection():
@@ -321,7 +321,7 @@ def listOfPlayers(limit=10):
 
 
 # -----------------------------------------------------------------
-# Sprint 2 / Week 2 integration notes (Bro read this)
+# Sprint 2 / Week 2 integration notes 
 # -----------------------------------------------------------------
 # Info about the integration:
 # - The controller flow should be:
@@ -351,7 +351,7 @@ if __name__ == "__main__":
     print("=" * 60)
     
     if testOurConnection():
-        print("\n✓ Database connection successful!\n")
+        print("\n Database connection successful!\n")
         
         print("Here's an example list of players:")
         listOfPlayers(5)
