@@ -212,6 +212,15 @@ You should see:
 
 9901 | Gambit
 
+Then run:
+
+- PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
+
+You should see:
+
+9901 | Gambit
+9902 | Wolverine
+
 Now you can see that the database updates players through the app properly.
 
 -----
