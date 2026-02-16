@@ -22,35 +22,34 @@ Tips!
 
 import os # reliable path to assets
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, 
 import controller  # You should only call the controller 
 
 MS_SplashTime = 3000  # 3 seconds
-TEAM_ROWS = 15 # number of roster rows (0-14)
+teamRows = 15 # number of roster rows (0-14)
 
 class EntryScreen(tk.Frame):
-    def __init__(self, parent, on_start_game=None):
+    def __init__(self, parent, startGame=None):
         super().__init__(parent, bg="black")
-        self.on_start_game = on_start_game
+        self.startGame = startGame
 
         # store local roster data for display 
-        # Each entry: (player_id:int, codename:str, equipment_id:int)
-        self.red_roster = []
-        self.green_roster = []
+        self.redRoster = []
+        self.greenRoster = []
 
-        # NEW: Track which Player IDs have been used in this game session
-        self.used_player_ids = set()
+        # Keep track of which Player IDs have been used in this specific game 
+        self.notNewPlayerID = set()
 
-        self.player_in_db = False
-        self.db_codename = None #stores the codename from the database when a player is found.
-        self.codename_was_modified = False  # Track if user changed the codename
+        self.playerInDB = False
+        self.codenameForDB = None #stores the codename from the database when a player is found.
+        self.codenameChanged = False  # Track if the user changed the codename
 
         # Top Title Area
-        title_frame = tk.Frame(self, bg="black")
-        title_frame.pack(fill="x", pady=(10, 0))
+        titleFrame = tk.Frame(self, bg="black")
+        titleFrame.pack(fill="x", pady=(10, 0))
 
         tk.Label(
-            title_frame,
+            titleFrame,
             text="Entry Terminal",
             fg="white",
             bg="black",
@@ -58,7 +57,7 @@ class EntryScreen(tk.Frame):
         ).pack()
 
         tk.Label(
-            title_frame,
+            titleFrame,
             text="Edit Current Game",
             fg="#4a6cff",
             bg="black",
@@ -66,40 +65,40 @@ class EntryScreen(tk.Frame):
         ).pack(pady=(3, 10))
 
         # Middle Teams Area
-        teams_frame = tk.Frame(self, bg="black")
-        teams_frame.pack(pady=5)
+        teamsFrame = tk.Frame(self, bg="black")
+        teamsFrame.pack(pady=5)
 
-        # Build the two tables/panels
-        self.red_panel = self._build_team_panel(
-            teams_frame,
-            team_name="RED TEAM",
+        # Build the two tables
+        self.redRos = self.makeTeamRos(
+            teamsFrame,
+            teamName="RED TEAM",
             header_bg="#5a0000",
             outline="#5a0000"
         )
-        self.green_panel = self._build_team_panel(
-            teams_frame,
-            team_name="GREEN TEAM",
+        self.greenRos = self.makeTeamRos(
+            teamsFrame,
+            teamName="GREEN TEAM",
             header_bg="#004d00",
             outline="#004d00"
         )
 
-        self.red_panel["frame"].grid(row=0, column=0, padx=20)
-        self.green_panel["frame"].grid(row=0, column=1, padx=20)
+        self.redRos["frame"].grid(row=0, column=0, padx=20)
+        self.greenRos["frame"].grid(row=0, column=1, padx=20)
 
 
         # Entry Controls Area 
-        controls_frame = tk.Frame(self, bg="black")
-        controls_frame.pack(fill="x", pady=(10, 5))
+        controlsArea = tk.Frame(self, bg="black")
+        controlsArea.pack(fill="x", pady=(10, 5))
 
         # Team selection
         tk.Label(
-            controls_frame, text="Team:", fg="white", bg="black", font=("Arial", 10, "bold")
+            controlsArea, text="Team:", fg="white", bg="black", font=("Arial", 10, "bold")
         ).grid(row=0, column=0, padx=6, pady=4, sticky="e")
 
-        self.team_var = tk.StringVar(value="RED")
+        self.teamVariable = tk.StringVar(value="RED")
         team_box = ttk.Combobox(
-            controls_frame,
-            textvariable=self.team_var,
+            controlsArea,
+            textvariable=self.teamVariable,
             values=["RED", "GREEN"],
             width=8,
             state="readonly"
@@ -108,77 +107,77 @@ class EntryScreen(tk.Frame):
 
         # Player ID
         tk.Label(
-            controls_frame, text="Player ID:", fg="white", bg="black", font=("Arial", 10, "bold")
+            controlsArea, text="Player ID:", fg="white", bg="black", font=("Arial", 10, "bold")
         ).grid(row=0, column=2, padx=6, pady=4, sticky="e")
-        self.player_id_entry = ttk.Entry(controls_frame, width=10)
-        self.player_id_entry.grid(row=0, column=3, padx=6, pady=4, sticky="w")
-        self.player_id_entry.bind("<FocusOut>", self.on_player_id_changed)
-        self.player_id_entry.bind("<Return>", self.on_player_id_changed)
+        self.entryPlayerID = ttk.Entry(controlsArea, width=10)
+        self.entryPlayerID.grid(row=0, column=3, padx=6, pady=4, sticky="w")
+        self.entryPlayerID.bind("<FocusOut>", self.on_playerID_changed)
+        self.entryPlayerID.bind("<Return>", self.on_playerID_changed)
 
         # Codename
         tk.Label(
-            controls_frame, text="Codename:", fg="white", bg="black", font=("Arial", 10, "bold")
+            controlsArea, text="Codename:", fg="white", bg="black", font=("Arial", 10, "bold")
         ).grid(row=0, column=4, padx=6, pady=4, sticky="e")
-        self.codename_entry = ttk.Entry(controls_frame, width=18)
-        self.codename_entry.grid(row=0, column=5, padx=6, pady=4, sticky="w")
+        self.entryForCodename = ttk.Entry(controlsArea, width=18)
+        self.entryForCodename.grid(row=0, column=5, padx=6, pady=4, sticky="w")
         # Track when codename is manually changed
-        self.codename_entry.bind("<KeyRelease>", self.on_codename_changed)
+        self.entryForCodename.bind("<KeyRelease>", self.codenameHasChanged)
 
         # Equipment ID
         tk.Label(
-            controls_frame, text="Equipment ID:", fg="white", bg="black", font=("Arial", 10, "bold")
+            controlsArea, text="Equipment ID:", fg="white", bg="black", font=("Arial", 10, "bold")
         ).grid(row=0, column=6, padx=6, pady=4, sticky="e")
-        self.equipment_id_entry = ttk.Entry(controls_frame, width=10)
-        self.equipment_id_entry.grid(row=0, column=7, padx=6, pady=4, sticky="w")
+        self.entryEquipID = ttk.Entry(controlsArea, width=10)
+        self.entryEquipID.grid(row=0, column=7, padx=6, pady=4, sticky="w")
 
-        # Add Player button (handles all scenarios: add new, use existing, update existing)
-        add_btn = ttk.Button(controls_frame, text="Add Player", command=self.on_add_player)
-        add_btn.grid(row=0, column=8, padx=10, pady=4)
+        # Add Player button
+        addButton = ttk.Button(controlsArea, text="Add Player", command=self.addPlayerOn)
+        addButton.grid(row=0, column=8, padx=10, pady=4)
 
-        # Error/status label
-        self.status_var = tk.StringVar(value="")
+        # Error status label
+        self.statusVariable = tk.StringVar(value="")
         tk.Label(
-            controls_frame,
-            textvariable=self.status_var,
+            controlsArea,
+            textvariable=self.statusVariable,
             fg="yellow",
             bg="black",
             font=("Arial", 10)
         ).grid(row=1, column=0, columnspan=10, padx=6, pady=(2, 0), sticky="w")
 
 
-        # Bottom Button Bar (look like F-key buttons)
+        # Bottom Button Bar 
         buttons_frame = tk.Frame(self, bg="black")
         buttons_frame.pack(fill="x", pady=(10, 0))
 
-        # Sprint 2 only strictly needs F5 and F12 behaviors.
-        self._key_button(buttons_frame, "F1\nEntry", self.on_f1).pack(side="left", padx=6)
-        self._key_button(buttons_frame, "F3\nStart Game", self.on_f5).pack(side="left", padx=6)
-        self._key_button(buttons_frame, "F5\nStart Game", self.on_f5).pack(side="left", padx=6)
-        self._key_button(buttons_frame, "F12\nClear Game", self.on_f12).pack(side="right", padx=6)
+        # F5 and F12
+        self.keyButton(buttons_frame, "F1\nEntry", self.on_f1).pack(side="left", padx=6)
+        self.keyButton(buttons_frame, "F3\nStart Game", self.on_f5).pack(side="left", padx=6)
+        self.keyButton(buttons_frame, "F5\nStart Game", self.on_f5).pack(side="left", padx=6)
+        self.keyButton(buttons_frame, "F12\nClear Game", self.on_f12).pack(side="right", padx=6)
 
 
         # Footer hint
         tk.Label(
             self,
-            text="<F12> to Clear Game    <F5> to Start Game",
+            text="<F12> to Clear Game <F5> to Start Game",
             fg="white",
             bg="black",
             font=("Arial", 10)
         ).pack(fill="x", pady=(8, 10))
 
         # Initial paint
-        self.after_idle(self.refresh_tables)
+        self.after_idle(self.refreshTables)
 
-    def _build_team_panel(self, parent, team_name, header_bg, outline):
+    def makeTeamRos(self, parent, teamName, header_bg, outline):
         """
         Build a table-like panel with 15 rows. Each row has:
-        index label, player_id display, codename display.
+        index label, playerID display, codename display.
         """
         panel = tk.Frame(parent, bg="black")
 
         header = tk.Label(
             panel,
-            text=team_name,
+            text=teamName,
             fg="white",
             bg=header_bg,
             font=("Arial", 10, "bold"),
@@ -187,38 +186,37 @@ class EntryScreen(tk.Frame):
         header.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 5))
 
         rows = []
-        for i in range(TEAM_ROWS):
+        for i in range(teamRows):
             idx = tk.Label(panel, text=str(i), fg="white", bg="black", width=2)
             idx.grid(row=i + 1, column=0, padx=(0, 6), sticky="w")
 
-            player_box = tk.Entry(
+            playerBox = tk.Entry(
                 panel,
                 width=10,
                 justify="center",
                 highlightthickness=1,
                 highlightbackground=outline
             )
-            player_box.grid(row=i + 1, column=1, padx=(0, 6), pady=1)
+            playerBox.grid(row=i + 1, column=1, padx=(0, 6), pady=1)
 
-            code_box = tk.Entry(
+            codeBox = tk.Entry(
                 panel,
                 width=18,
                 justify="center",
                 highlightthickness=1,
                 highlightbackground=outline
             )
-            code_box.grid(row=i + 1, column=2, pady=1)
+            codeBox.grid(row=i + 1, column=2, pady=1)
 
             # This is the Display-only look to disable them
-            player_box.configure(state="disabled")
-            code_box.configure(state="disabled")
+            playerBox.configure(state="disabled")
+            codeBox.configure(state="disabled")
 
-            rows.append((player_box, code_box))
+            rows.append((playerBox, codeBox))
 
         return {"frame": panel, "rows": rows}
 
-    def _key_button(self, parent, text, cmd):
-        """A button styled like the screenshot's function-key blocks."""
+    def keyButton(self, parent, text, cmd):
         return tk.Button(
             parent,
             text=text,
@@ -232,102 +230,102 @@ class EntryScreen(tk.Frame):
             font=("Arial", 9, "bold")
         )
 
-    def on_codename_changed(self, event=None):
-        """Track when user manually modifies the codename field"""
-        if self.player_in_db and self.db_codename:
-            current_text = self.codename_entry.get().strip()
-            # If the text is different from DB codename, user is modifying it
-            if current_text != self.db_codename:
-                self.codename_was_modified = True
+    def codenameHasChanged(self, event=None):
+     #pay attention to when a user changes the codename
+        if self.playerInDB and self.codenameForDB:
+            presentText = self.entryForCodename.get().strip()
+            # If the text is different from codename in the database, then its time to update it
+            if presentText != self.codenameForDB:
+                self.codenameChanged = True
             else:
-                self.codename_was_modified = False
+                self.codenameChanged = False
 
-    def on_player_id_changed(self, event=None):
-        """Called when player ID field changes - looks up player in database"""
-        raw = self.player_id_entry.get().strip()
+    def on_playerID_changed(self, event=None):
+        """This is called when the player ID field changes and a player will be looked up in the database"""
+        raw = self.entryPlayerID.get().strip()
 
         # Reset behavior if empty
         if raw == "":
-            self.player_in_db = False
-            self.db_codename = None
-            self.codename_was_modified = False
-            self.codename_entry.configure(state="normal")
-            self.codename_entry.delete(0, "end")
-            self.status_var.set("")
+            self.playerInDB = False
+            self.codenameForDB = None
+            self.codenameChanged = False
+            self.entryForCodename.configure(state="normal")
+            self.entryForCodename.delete(0, "end")
+            self.statusVariable.set("")
             return
 
-        # Validate player_id is an int
+        # Validate playerID is an int
         try:
-            player_id = int(raw)
+            playerID = int(raw)
         except ValueError:
-            self.player_in_db = False
-            self.db_codename = None
-            self.codename_was_modified = False
-            self.codename_entry.configure(state="normal")
-            self.codename_entry.delete(0, "end")
-            self.status_var.set("Player ID must be an integer.")
+            self.playerInDB = False
+            self.codenameForDB = None
+            self.codenameChanged = False
+            self.entryForCodename.configure(state="normal")
+            self.entryForCodename.delete(0, "end")
+            self.statusVariable.set("Player ID must be an integer.")
             return
 
-        # If ID is already in the game,just give the player the option to edit so there cna be updates
-        if player_id in self.used_player_ids:
-            self.status_var.set(f" This game already has the following Player ID {player_id}. Edit the codename and click Add Player to update.")
+        # If ID is already in the game, just give the player the option to edit so there can be updates
+        if playerID in self.notNewPlayerID:
+            self.statusVariable.set(f" This game already has the following Player ID {playerID}. Edit the codename and click Add Player to update.")
 
-        # Ask controller for codename with NEW STATUS CODES
+        # Ask controller for codename with the NEW STATUS CODES!!!!!!!!!
         try:
-            status, db_codename = controller.dbGetCodename(player_id)
+            status, codenameForDB = controller.dbGetCodename(playerID)
             
-            if status == "found" and db_codename:
+            if status == "found" and codenameForDB:
                 # Player exists in database 
-                self.player_in_db = True
-                self.db_codename = db_codename
-                self.codename_was_modified = False
+                self.playerInDB = True
+                self.codenameForDB = codenameForDB
+                self.codenameChanged = False
               
-                self.codename_entry.configure(state="normal")  
-                self.codename_entry.delete(0, "end")
-                self.codename_entry.insert(0, db_codename)
+                self.entryForCodename.configure(state="normal")  
+                self.entryForCodename.delete(0, "end")
+                self.entryForCodename.insert(0, codenameForDB)
               
-                # Show existing player message - user can modify if desired
-                self.status_var.set(f"✓ Player {player_id} found: '{db_codename}'. You can edit the name to update it.")
+                # Show the player message but the user can modify it if they want
+                self.statusVariable.set(f" Player {playerID} found: '{codenameForDB}'. You can edit the name to update it.")
                 
             elif status == "not_found":
                 # Player not in database
-                self.player_in_db = False
-                self.db_codename = None
-                self.codename_was_modified = False
-                self.codename_entry.configure(state="normal")
-                self.codename_entry.delete(0, "end")
-                self.status_var.set("New player - enter codename to add to database.")
-                self.codename_entry.focus_set()
+                self.playerInDB = False
+                self.codenameForDB = None
+                self.codenameChanged = False
+                self.entryForCodename.configure(state="normal")
+                self.entryForCodename.delete(0, "end")
+                self.statusVariable.set("New player - enter codename to add to database.")
+                self.entryForCodename.focus_set()
                 
             elif status == "db_error":
-                # Database error occurred
-                self.player_in_db = False
-                self.db_codename = None
-                self.codename_was_modified = False
-                self.codename_entry.configure(state="normal")
-                self.codename_entry.delete(0, "end")
-                self.status_var.set("Database error! Check PostgreSQL connection.")
+                # A Database error has occurred
+                self.playerInDB = False
+                self.codenameForDB = None
+                self.codenameChanged = False
+                self.entryForCodename.configure(state="normal")
+                self.entryForCodename.delete(0, "end")
+                self.statusVariable.set("Database error! Check PostgreSQL connection.")
                 
             else:
                 # Unknown status
-                self.player_in_db = False
-                self.db_codename = None
-                self.codename_was_modified = False
-                self.codename_entry.configure(state="normal")
-                self.codename_entry.delete(0, "end")
-                self.status_var.set(f"Unknown database status: {status}")
+                self.playerInDB = False
+                self.codenameForDB = None
+                self.codenameChanged = False
+                self.entryForCodename.configure(state="normal")
+                self.entryForCodename.delete(0, "end")
+                self.statusVariable.set(f"The database status is unknown: {status}")
                 
         except Exception as e:
             # Unexpected error
-            self.player_in_db = False
-            self.db_codename = None
-            self.codename_was_modified = False
-            self.codename_entry.configure(state="normal")
-            self.codename_entry.delete(0, "end")
-            self.status_var.set(f"Error: {e}")
+            self.playerInDB = False
+            self.codenameForDB = None
+            self.codenameChanged = False
+            self.entryForCodename.configure(state="normal")
+            self.entryForCodename.delete(0, "end")
+            self.statusVariable.set(f"Error: {e}")
 
 
-    def on_add_player(self):
+    def addPlayerOn(self):
         """
         Unified Add Player button that handles three scenarios:
         1. Player exists, codename NOT modified → Use existing codename (no DB update)
@@ -336,199 +334,203 @@ class EntryScreen(tk.Frame):
         
       Also prevents duplicate Player IDs in the same game session
         """
-        team = self.team_var.get().strip().upper()
+        team = self.teamVariable.get().strip().upper()
 
         # Validate ints
         try:
-            player_id = int(self.player_id_entry.get().strip())
+            playerID = int(self.entryPlayerID.get().strip())
         except ValueError:
-            self.status_var.set("Player ID must be an integer.")
+            self.statusVariable.set("Player ID must be an integer.")
             return
 
         try:
-            equipment_id = int(self.equipment_id_entry.get().strip())
+            equipmentID = int(self.entryEquipID.get().strip())
         except ValueError:
-            self.status_var.set("Equipment ID must be an integer.")
+            self.statusVariable.set("Equipment ID must be an integer.")
             return
 
         # Get current codename from UI
-        codename_to_use = self.codename_entry.get().strip()
-        if not codename_to_use:
-            self.status_var.set("Please enter a codename.")
+        codenameOfUse = self.entryForCodename.get().strip()
+        if not codenameOfUse:
+            self.statusVariable.set("Please enter a codename.")
             return
 
         # If player is in the game roster, then update it
-        if player_id in self.used_player_ids:
+        if playerID in self.notNewPlayerID:
             try:
-                status = controller.dbUpdatePlayer(player_id, codename_to_use)
+                status = controller.dbUpdatePlayer(playerID, codenameOfUse)
                 if status != "success":
-                    self.status_var.set(f"Player {player_id} could not be updated in the database")
+                    self.statusVariable.set(f"Player {playerID} could not be updated in the database")
                     return
             except Exception as e:
-                self.status_var.set(f"There was an error updating: {e}")
+                self.statusVariable.set(f"There was an error updating: {e}")
                 return
         
-            # codename  is updated in local roster display
+            # here the codename is updated in the roster
             updated = False
-            for i, (pid, _code, eq) in enumerate(self.red_roster):
-                if pid == player_id:
-                    self.red_roster[i] = (pid, codename_to_use, eq)
+            for i, (playID, code, eq) in enumerate(self.redRoster):
+                if playID == playerID:
+                    self.redRoster[i] = (playID, codenameOfUse, eq)  # equipment ID does not change
                     updated = True
                     break
-        
+            
             if not updated:
-                for i, (pid, _code, eq) in enumerate(self.green_roster):
-                    if pid == player_id:
-                        self.green_roster[i] = (pid, codename_to_use, eq)
+                for i, (playID, code, eq) in enumerate(self.greenRoster):
+                    if playID == playerID:
+                        self.greenRoster[i] = (playID, codenameOfUse, eq)  # equipment ID does not change
+                        updated = True
                         break
-        
-            self.refresh_tables()
-            self.status_var.set(f"Updated Player {player_id} -> '{codename_to_use}'")
+            
+            self.refreshTables()
+            self.statusVariable.set(
+                f"The codename was updated for Player {playerID}. "
+                "To change Player ID or Equipment ID, please delete and re-add the player."
+            )
         
             # clear the inputs
-            self.player_id_entry.delete(0, "end")
-            self.codename_entry.delete(0, "end")
-            self.equipment_id_entry.delete(0, "end")
-            self.player_in_db = False
-            self.db_codename = None
-            self.codename_was_modified = False
-            self.player_id_entry.focus_set()
+            self.entryPlayerID.delete(0, "end")
+            self.entryForCodename.delete(0, "end")
+            self.entryEquipID.delete(0, "end")
+            self.playerInDB = False
+            self.codenameForDB = None
+            self.codenameChanged = False
+            self.entryPlayerID.focus_set()
             return
 
         # Update UI roster
-        roster = self.red_roster if team == "RED" else self.green_roster
-        if len(roster) >= TEAM_ROWS:
-            self.status_var.set(f"{team} team is full ({TEAM_ROWS} players).")
+        roster = self.redRoster if team == "RED" else self.greenRoster
+        if len(roster) >= teamRows:
+            self.statusVariable.set(f"{team} team is full ({teamRows} players).")
             return
 
-        # SCENARIO 1 & 2: Player exists in database
-        if self.player_in_db:
-            # Check if codename was modified
-            if self.codename_was_modified and codename_to_use != self.db_codename:
-                # SCENARIO 2: Update the codename in database
+        # Scenario 1 & 2: Player exists in database
+        if self.playerInDB:
+            # Check if codename was changed
+            if self.codenameChanged and codenameOfUse != self.codenameForDB:
+                # Scenario 2: Update the codename in database
                 try:
-                    status = controller.dbUpdatePlayer(player_id, codename_to_use)
+                    status = controller.dbUpdatePlayer(playerID, codenameOfUse)
                     
                     if status == "success":
-                        self.status_var.set(f" Updated Player {player_id} to '{codename_to_use}'")
+                        self.statusVariable.set(f" Updated Player {playerID} to '{codenameOfUse}'")
                     elif status == "not_found":
-                        self.status_var.set(f" Player {player_id} not found - cannot update")
+                        self.statusVariable.set(f" Player {playerID} was not found. Therefore, no update")
                         return
                     else:  # db_error
-                        self.status_var.set(f" Database error - update failed")
+                        self.statusVariable.set(f" Database error - update failed")
                         return
                 except Exception as e:
-                    self.status_var.set(f"Error updating: {e}")
+                    self.statusVariable.set(f"Error updating: {e}")
                     return
             else:
-                # SCENARIO 1: Use existing codename (no DB update needed)
-                self.status_var.set(f" Using existing codename '{codename_to_use}' for Player {player_id}")
+                # Scenario 1: Use the existing codename 
+                self.statusVariable.set(f" Using existing codename '{codenameOfUse}' for Player {playerID}")
 
-        # SCENARIO 3: Player doesn't exist - insert new player
+        # Scenario 3: Player doesn't exist . Then, insert a new player
         else:
             try:
-                status = controller.dbInsertPlayer(player_id, codename_to_use)
+                status = controller.dbInsertPlayer(playerID, codenameOfUse)
                 
                 if status == "success":
-                    self.status_var.set(f" New player '{codename_to_use}' added to database")
+                    self.statusVariable.set(f" New player '{codenameOfUse}' added to database")
                 elif status == "duplicate":
-                    # This shouldn't happen since we check self.player_in_db above
-                    self.status_var.set(f" Player {player_id} already exists in database")
+                    # This shouldn't happen since we check self.playerInDB above
+                    self.statusVariable.set(f" Player {playerID} already exists in database")
                     return
                 else:  # db_error
-                    self.status_var.set(f" Database error - player not saved")
+                    self.statusVariable.set(f" Database error - player not saved")
                     return
             except Exception as e:
-                self.status_var.set(f"Error inserting: {e}")
+                self.statusVariable.set(f"Error inserting: {e}")
                 return
 
         # Add to controller team list (broadcast handled inside controller)
         try:
-            controller.addPlayerToTeam(team, player_id, codename_to_use, equipment_id)
+            controller.addPlayerToTeam(team, playerID, codenameOfUse, equipmentID)
         except Exception as e:
-            self.status_var.set(f"Controller error: {e}")
+            self.statusVariable.set(f"Controller error: {e}")
             return
 
         # Add to local roster for display
-        roster.append((player_id, codename_to_use, equipment_id))
+        roster.append((playerID, codenameOfUse, equipmentID))
         
         # NEW: Mark this Player ID as used in this game session
-        self.used_player_ids.add(player_id)
+        self.notNewPlayerID.add(playerID)
         
-        self.refresh_tables()
+        self.refreshTables()
 
         # Clear inputs for next entry
-        self.player_id_entry.delete(0, "end")
-        self.codename_entry.delete(0, "end")
-        self.equipment_id_entry.delete(0, "end")
+        self.entryPlayerID.delete(0, "end")
+        self.entryForCodename.delete(0, "end")
+        self.entryEquipID.delete(0, "end")
 
         # Reset flags for next entry
-        self.player_in_db = False
-        self.db_codename = None
-        self.codename_was_modified = False
+        self.playerInDB = False
+        self.codenameForDB = None
+        self.codenameChanged = False
 
         # Focus back to player ID for quick entry
-        self.player_id_entry.focus_set()
+        self.entryPlayerID.focus_set()
 
     def on_f1(self):
         # Placeholder for later 
-        self.status_var.set("Already on Entry screen.")
+        self.statusVariable.set("Already on Entry screen.")
 
     def on_f12(self):
         """F12 behavior: clear controller state and refresh UI."""
         controller.clearItAll()
-        self.red_roster.clear()
-        self.green_roster.clear()
+        self.redRoster.clear()
+        self.greenRoster.clear()
         
         # NEW: Clear the used Player IDs set
-        self.used_player_ids.clear()
+        self.notNewPlayerID.clear()
         
-        self.refresh_tables()
-        self.status_var.set("Cleared all entries.")
+        self.refreshTables()
+        self.statusVariable.set("Cleared all entries.")
 
         #this avoids stale lookup
-        self.player_in_db = False
-        self.db_codename = None
-        self.codename_was_modified = False
+        self.playerInDB = False
+        self.codenameForDB = None
+        self.codenameChanged = False
         
-        self.player_id_entry.delete(0, "end")
-        self.codename_entry.delete(0, "end")
-        self.equipment_id_entry.delete(0, "end")
+        self.entryPlayerID.delete(0, "end")
+        self.entryForCodename.delete(0, "end")
+        self.entryEquipID.delete(0, "end")
 
     def on_f5(self):
         try:
             controller.changePhase("ACTION")
         except Exception as e:
-            self.status_var.set(f"changePhase not ready: {e}")
+            self.statusVariable.set(f"changePhase not ready: {e}")
 
         # Switch what user sees
-        if self.on_start_game:
-            self.on_start_game()
+        if self.startGame:
+            self.startGame()
         else:
-            self.status_var.set("Game started (action screen later).")
+            self.statusVariable.set("Game started (action screen later).")
 
-    def refresh_tables(self):
+    def refreshTables(self):
         """Paint roster data into the 15-row tables."""
-        self._paint_roster(self.red_panel["rows"], self.red_roster)
-        self._paint_roster(self.green_panel["rows"], self.green_roster)
+        self._paint_roster(self.redRos["rows"], self.redRoster)
+        self._paint_roster(self.greenRos["rows"], self.greenRoster)
 
     def _paint_roster(self, ui_rows, roster):
-        for i in range(TEAM_ROWS):
-            player_box, code_box = ui_rows[i]
+        for i in range(teamRows):
+            playerBox, codeBox = ui_rows[i]
 
-            player_box.configure(state="normal")
-            code_box.configure(state="normal")
+            playerBox.configure(state="normal")
+            codeBox.configure(state="normal")
 
-            player_box.delete(0, "end")
-            code_box.delete(0, "end")
+            playerBox.delete(0, "end")
+            codeBox.delete(0, "end")
 
             if i < len(roster):
-                player_id, codename, equipment_id = roster[i]
-                player_box.insert(0, str(player_id))
-                code_box.insert(0, codename)
+                playerID, codename, equipmentID = roster[i]
+                playerBox.insert(0, str(playerID))
+                codeBox.insert(0, codename)
 
-            player_box.configure(state="disabled")
-            code_box.configure(state="disabled")
+            playerBox.configure(state="disabled")
+            codeBox.configure(state="disabled")
 
 class ActionScreen(tk.Frame):
     def __init__(self, parent, on_return_entry=None):
@@ -563,7 +565,7 @@ def startApp():
     # this hides the  window  at first so user doesn't see ugly first draw in VM
     root.withdraw()
 
-    def force_window_geometry():
+    def forceWinGeo():
         root.update_idletasks()
         sw = root.winfo_screenwidth()
         sh = root.winfo_screenheight()
@@ -590,21 +592,21 @@ def startApp():
     ip_entry.pack(side=tk.LEFT, padx=6, pady=6)
     ip_entry.insert(0, "127.0.0.1")
 
-    def on_set_ip_click():
+    def clickSetIP():
         controller.netSetIp(ip_entry.get().strip())
 
-    ttk.Button(footer, text="Set Network IP", command=on_set_ip_click).pack(side=tk.LEFT, padx=6, pady=6)
+    ttk.Button(footer, text="Set Network IP", command=clickSetIP).pack(side=tk.LEFT, padx=6, pady=6)
 
     # keybinds 
-    current_screen = {"screen": None}
+    presentScreen = {"screen": None}
 
     def show_screen(new_screen):
-        old = current_screen["screen"]
+        old = presentScreen["screen"]
         if old is not None:
             old.pack_forget()
             old.destroy()
     
-        current_screen["screen"] = new_screen
+        presentScreen["screen"] = new_screen
         new_screen.pack(in_=content, fill="both", expand=True)
     
         # This forces the new layout & redraw in the Virtual Machine 
@@ -613,23 +615,23 @@ def startApp():
 
     
     def f12Clear(event):
-        if current_screen["screen"] is not None and hasattr(current_screen["screen"], "on_f12"):
-            current_screen["screen"].on_f12()
+        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "on_f12"):
+            presentScreen["screen"].on_f12()
         else:
             controller.clearItAll()
 
     def f5Start(event):
-        if current_screen["screen"] is not None and hasattr(current_screen["screen"], "on_f5"):
-            current_screen["screen"].on_f5()
+        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "on_f5"):
+            presentScreen["screen"].on_f5()
 
     def f1Entry(event):
-        if current_screen["screen"] is not None and hasattr(current_screen["screen"], "on_f1"):
-            current_screen["screen"].on_f1()
+        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "on_f1"):
+            presentScreen["screen"].on_f1()
 
     def f3Start(event):
         # Just a Placeholder: same behavior as F5 for now
-        if current_screen["screen"] is not None and hasattr(current_screen["screen"], "on_f5"):
-            current_screen["screen"].on_f5()
+        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "on_f5"):
+            presentScreen["screen"].on_f5()
 
     root.bind("<F1>", f1Entry)
     root.bind("<F3>", f3Start)
@@ -637,17 +639,17 @@ def startApp():
     root.bind("<F5>", f5Start)
 
     # Splash screen 
-    splash_frame = tk.Frame(content, bg="black")
-    splash_frame.pack(fill="both", expand=True)
+    splashFrame = tk.Frame(content, bg="black")
+    splashFrame.pack(fill="both", expand=True)
 
-    splash_label = tk.Label(
-        splash_frame,
+    splashPic = tk.Label(
+        splashFrame,
         text="",
         fg="white",
         bg="black",
         font=("Times New Roman", 28, "bold")
     )
-    splash_label.pack(expand=True)
+    splashPic.pack(expand=True)
 
     # Try to load Jim's logo from assets/logo.png
     # If it fails (missing file or png unsupported), fall back to text.
@@ -662,32 +664,32 @@ def startApp():
         scale = 5
         logo_img = logo_img.subsample(scale, scale)
 
-        splash_label.configure(image=logo_img, text="")
-        splash_label.image = logo_img  # keep reference
+        splashPic.configure(image=logo_img, text="")
+        splashPic.image = logo_img  # keep reference
     except Exception:
-        splash_label.configure(text="Photon Laser Tag\nSplash Screen")
+        splashPic.configure(text="Photon Laser Tag\nSplash Screen")
 
     # After 3 seconds, go to Entry/Beginning screen 
     def goToBegin():
-        splash_frame.destroy()
+        splashFrame.destroy()
 
         def goToAction():
             def backToEntry():
-                entry = EntryScreen(content, on_start_game=goToAction)
+                entry = EntryScreen(content, startGame=goToAction)
                 show_screen(entry)
                 # just reapply the geometry after the switch back
-                root.after(0, force_window_geometry)
-                root.after(120, force_window_geometry)
+                root.after(0, forceWinGeo)
+                root.after(120, forceWinGeo)
               
             show_screen(ActionScreen(content, on_return_entry=backToEntry))
-            root.after(0, force_window_geometry)
-            root.after(120, force_window_geometry)
+            root.after(0, forceWinGeo)
+            root.after(120, forceWinGeo)
 
         def build_entry():
-            entry = EntryScreen(content, on_start_game=goToAction)
+            entry = EntryScreen(content, startGame=goToAction)
             show_screen(entry)
-            root.after(0, force_window_geometry)
-            root.after(120, force_window_geometry)
+            root.after(0, forceWinGeo)
+            root.after(120, forceWinGeo)
 
         # After Tk finishes the event loop cycle the entry will be built
         root.after_idle(build_entry)
@@ -698,9 +700,9 @@ def startApp():
     root.after(MS_SplashTime + 300, controller.netBeginUDP_Listener)
 
     # the geometry is applied multiple times and aftwerwards the window is shown
-    root.after(0, force_window_geometry)
-    root.after(120, force_window_geometry)
-    root.after(350, force_window_geometry)
+    root.after(0, forceWinGeo)
+    root.after(120, forceWinGeo)
+    root.after(350, forceWinGeo)
     root.deiconify()
 
     root.mainloop()
