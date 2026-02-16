@@ -22,7 +22,7 @@ Tips!
 
 import os # reliable path to assets
 import tkinter as tk
-from tkinter import ttk, 
+from tkinter import ttk
 import controller  # You should only call the controller 
 
 MS_SplashTime = 3000  # 3 seconds
