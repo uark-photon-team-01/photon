@@ -66,9 +66,9 @@ It will ask the password for student type "student" (ignore the air quotes).
 
 You should see:
 
-count
-0
-(1 row)
+- count
+- 0
+- (1 row)
 
 
 -----
@@ -189,8 +189,9 @@ In Terminal B, type the following code:
 
 You should see:
 
-9901 | Deadpool
-9902 | Wolverine
+- ID   | Codename
+- 9901 | Deadpool
+- 9902 | Wolverine
 
 Now you can see that the database is inserts players through the app properly.
 
@@ -210,7 +211,8 @@ Click Add Player, then in Terminal B enter the following:
 
 You should see:
 
-9901 | Gambit
+- ID   | Codename
+- 9901 | Gambit
 
 Then run:
 
@@ -218,8 +220,9 @@ Then run:
 
 You should see:
 
-9901 | Gambit
-9902 | Wolverine
+- ID   | Codename
+- 9901 | Gambit
+- 9902 | Wolverine
 
 Now you can see that the database updates players through the app properly.
 
