@@ -50,19 +50,26 @@ After entering in this code, pull the latest code again. (Section B)
 
 -----
 
-**Start PostgreSQL and check the database (Section D)**
+**Start PostgreSQL and check the provided database (Section D)**
 
 Open a second terminal and type in the code below.
-
-
 
 1. sudo systemctl start postgresql
 
 It will ask the password for student type "student" (ignore the air quotes). Also, use the provided database as-is. Do not create, alter, or truncate the table.
 
 
-2. psql -d photon -c "SELECT COUNT(*) FROM players;"
+2. psql -d photon -c "\dt"
+3. psql -d photon -c "\d players"
+4. psql -d photon -c "SELECT * FROM players ORDER BY id;"
+5. psql -d photon -c "SELECT COUNT(*) FROM players;"
 
+Commands explained:
+
+- \dt: shows the tables in the database
+- \d players: shows the structure of the players table
+- SELECT * FROM players ORDER BY id; prints the current contents already in the database
+- SELECT COUNT(*) FROM players; shows how many player rows currently exist
 
 -----
 
@@ -125,7 +132,7 @@ Great job! Now you know that the network code works properly.
 
 
 #
-**Test the Database Code**
+**Look at the Database during runtime**
 
 You should already have two terminals open.
 
@@ -133,17 +140,14 @@ Terminal A will run the app (python3 main.py)
 
 Terminal B will run SQL checks (psql commands)
 
+In Terminal B, you can inspect the existing database contents at any time with:
+
+- psql -d photon -c "SELECT * FROM players ORDER BY id;"
+- psql -d photon -c "SELECT COUNT(*) FROM players;"
+
+
+
 Now close the app please.
-
------
-
-**In Terminal B, clean the test rows**
-
-Please enter the following code:
-- psql -d photon -c "DELETE FROM players WHERE id IN (9901,9902);"
-- psql -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
-
-You should see an id | codename table with 0 rows.
 
 -----
 
@@ -156,51 +160,6 @@ Please enter the following code:
 
 -----
 
-**Add Two players to the app in Terminal A**
-
-Add Player 1 to the Red Team:
-
-- Player ID:  9901
-- Codename: Deadpool
-- Equipment ID: 501
-
-Now, Add Player 2 to the Green Team:
-
-- Player ID: 9902
-- Codename: Wolverine
-- Equipment ID: 502
-
-Click Add Player for each one.
-
------
-
-**Verify that the Database is working**
-
-In Terminal B, type the following code:
-
-- psql -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
-
-You should see:
-
-- ID   | Codename
-- 9901 | Deadpool
-- 9902 | Wolverine
-
-Now you can see that the database is inserts players through the app properly.
-
------
-
-
------
-
-**Clear the Test Data**
-
-Just enter the following in Terminal B:
-
-- psql -d photon -c "DELETE FROM players WHERE id IN (9901,9902);"
-
-You can verify removal by running:
-- psql -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
 
 Great job! Now you know that the database code works properly.
 
