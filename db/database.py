@@ -36,10 +36,10 @@ from psycopg2 import sql  # this is used for advanced SQL building later
 # For some Debian VMs, password/host/port are not needed for a local database.
 connection_params = {
     "dbname": "photon",
-    "user": "student",
-    "password": "student",  # Hey Will, uncomment this if the Virtual Machine needs it 
-    "host": "localhost",
-    "port": "5432",
+     #  "user": "student",
+     # "password": "student",  # Hey Will, uncomment this if the Virtual Machine needs it 
+     # "host": "localhost",
+     # "port": "5432",
 }
 
 
