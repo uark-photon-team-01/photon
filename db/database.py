@@ -17,9 +17,14 @@ Constraints from Jim:
 - Table: players
 - Do NOT alter schema (that means no CREATE/ALTER/DROP). Only SELECT/INSERT/DELETE rows.
 
+Database behavior rules:
+- If a player ID is already in the database, use that codename as-is. Do NOT update it.
+- If a player ID is not in the database, allow a new insert.
+- No UPDATE, no CREATE, no ALTER, no TRUNCATE. Only SELECT, INSERT, and targeted DELETE.
+
 ---
 The parts of code that were pulled from Jim's repo were:
-- Connection style + parameters 
+- Connection style + parameters
 - Insert example
 - Jim also includes a file named player.sql, we do not need that!
 - So don't run it (AND do not create/alter tables).
@@ -31,15 +36,15 @@ from psycopg2 import sql  # this is used for advanced SQL building later
 
 
 # -----------------------------------------------------------------
-# This is the connection settings 
+# Connection settings
 # -----------------------------------------------------------------
 # For some Debian VMs, password/host/port are not needed for a local database.
 connection_params = {
     "dbname": "photon",
-     #  "user": "student",
-     # "password": "student",  # Hey Will, uncomment this if the Virtual Machine needs it 
-     # "host": "localhost",
-     # "port": "5432",
+    # "user": "student",
+    # "password": "student",  # Hey Will, uncomment this if the Virtual Machine needs it
+    # "host": "localhost",
+    # "port": "5432",
 }
 
 
@@ -48,9 +53,9 @@ def dbconnect():
 
     The structure should be simple: open -> do one operation -> close.
 
-    Will, If you get an auth error, try:
+    Will, if you get an auth error, try:
     - uncommenting password/host/port above, it should work then
-    
+
     Returns:
         psycopg2.connection: Active database connection
     """
@@ -59,13 +64,10 @@ def dbconnect():
 
 # -----------------------------------------------------------------------------------
 # Main database functions (The controller will call these!)
-# ------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 
 def obtainCodename(playerID):
     """Look up a player's codename by playerID.
-
-    If a codename is found it should be returned as a string.
-    If a codename is not found, then the return should be None
 
     Args:
         playerID (int): The player's ID number
@@ -74,26 +76,18 @@ def obtainCodename(playerID):
         str: The player's codename if found
         None: If no player with that ID exists
 
-    Note: 
+    Note:
         Column names are (id, codename) based on Jim's schema.
         If this fails, the column might be player_id instead of id.
-        To verify run: psql -d photon, then \d players
+        To verify run: psql -d photon, then \\d players
     """
-
     conn = dbconnect()
     try:
         curse = conn.cursor()
-
-        # Query for the codename matching this player ID
-        # Using parameterized query to prevent SQL injection
         curse.execute("SELECT codename FROM players WHERE id = %s;", (playerID,))
         row = curse.fetchone()
-
-        # If no row found, player doesn't exist
         if row is None:
             return None
-
-        # Return the codename (first column of the result)
         return row[0]
     finally:
         conn.close()
@@ -102,11 +96,9 @@ def obtainCodename(playerID):
 def addPlayer(playerID, codename):
     """Insert a new player into the database.
 
-    This will insert a new row with the given playerID and codename.
-    
-    Important: If a playerID already exists, this will raise an exception
-    because of the primary key constraint. This is intentional - it prevents
-    accidentally overwriting existing players.
+    Only call this after confirming the player does NOT already exist.
+    If a playerID already exists, this will raise an IntegrityError because
+    of the primary key constraint — that is intentional.
 
     Args:
         playerID (int): The player's ID number
@@ -120,83 +112,78 @@ def addPlayer(playerID, codename):
         Do not alter the schema. This only does INSERTs.
         Columns must match: (id, codename)
     """
-
     conn = dbconnect()
     try:
         curse = conn.cursor()
-
-        # Insert the new player using parameterized query
-        # This is the Insert pattern Jim used
         curse.execute(
             "INSERT INTO players (id, codename) VALUES (%s, %s);",
             (playerID, codename),
         )
-
-        # Commit the transaction to save changes
         conn.commit()
     finally:
         conn.close()
 
 
-def updatePlayer(playerID, newCodename):
-    """Update an existing player's codename.
+def deletePlayer(playerID):
+    """Delete a specific player from the database.
 
-    This will update the codename for a player that already exists in the database.
-    
+    Only use this for removing test players when needed.
+    Do not call this during normal gameplay.
+
     Args:
-        playerID (int): The player's ID number
-        newCodename (str): The new codename to set
+        playerID (int): The player's ID number to delete
 
     Returns:
-        bool: True if a row was updated, False if player doesn't exist
-
-    Raises:
-        psycopg2.Error: For database errors
+        bool: True if a row was deleted, False if player didn't exist
     """
-
     conn = dbconnect()
     try:
         curse = conn.cursor()
-
-        # Update the player's codename
-        curse.execute(
-            "UPDATE players SET codename = %s WHERE id = %s;",
-            (newCodename, playerID),
-        )
-
-        # Check how many rows were affected
-        rows_updated = curse.rowcount
-
-        # Commit the transaction
+        curse.execute("DELETE FROM players WHERE id = %s;", (playerID,))
+        rows_deleted = curse.rowcount
         conn.commit()
-
-        # Return True if at least one row was updated
-        return rows_updated > 0
+        return rows_deleted > 0
     finally:
         conn.close()
 
 
 # -----------------------------------------------------------------------------
-# Controller-friendly wrappers 
+# Controller-friendly wrappers
 # -----------------------------------------------------------------------------
 # These wrappers let the controller keep the stub names from Internals.md.
-# This makes it easy to change names in the future
+# All functions return a clear status string every time — no booleans, no bare None.
+#
+# Controller flow:
+#     status, codename = dbGetCodename(playerID)
+#     if status == "found":
+#         # Player exists — use codename as-is, do NOT update it
+#     elif status == "not_found":
+#         # UI asks user for a codename, then call dbInsertPlayer()
+#         insert_status = dbInsertPlayer(playerID, codename)
+#         if insert_status == "success":
+#             # Continue with the game
+#         elif insert_status == "duplicate":
+#             # Rare race condition — player was inserted between the lookup and insert
+#         else:
+#             # "db_error" — handle the failure
+#     else:
+#         # "db_error" — handle the failure
 
 
 def dbGetCodename(playerID):
-    """Wrapper for the controller stub name.
-    
-    This provides a clean interface for the controller to check if a player exists
-    and get their codename in one call.
-    
+    """Look up a player's codename by ID.
+
+    If the player is found, the codename is returned as-is. The controller
+    must NOT attempt to update the database row in that case.
+
     Args:
         playerID (int): The player's ID to look up
-    
+
     Returns:
-        tuple: (status, codenameOrNone)
-            - ("found", "PlayerName") if player exists
-            - ("not_found", None) if player doesn't exist in DB
-            - ("db_error", None) if database error occurred
+        tuple: (status, codename_or_none)
+            - ("found",     "PlayerName") if player exists
+            - ("not_found", None)         if player is not in the DB
+            - ("db_error",  None)         if a database error occurred
     """
     try:
         name = obtainCodename(playerID)
@@ -209,27 +196,32 @@ def dbGetCodename(playerID):
 
 
 def dbInsertPlayer(playerID, codename):
-    """Wrapper for the controller stub name.
-    
-    This provides a clean interface for the controller to add new players
-    with clear success/failure indication.
-    
+    """Insert a new player into the database.
+
+    Only call this when dbGetCodename returned "not_found".
+    Never call this to overwrite or refresh an existing player.
+
     Args:
         playerID (int): The player's ID number
         codename (str): The player's chosen codename
-    
+
     Returns:
         str: Status of the operation
-            - "success" if insert worked
-            - "duplicate" if player ID already exists
-            - "db_error" if other database error occurred
+            - "success"   if the insert worked
+            - "duplicate" if the player ID already exists
+            - "db_error"  if another database error occurred
     """
     try:
+        # Explicitly check for existing player first to guarantee duplicate
+        # detection regardless of how psycopg2/PostgreSQL handles IntegrityError
+        existing = obtainCodename(playerID)
+        if existing is not None:
+            print(f"Player {playerID} already exists in database")
+            return "duplicate"
         addPlayer(playerID, codename)
         return "success"
     except Exception as e:
         error_msg = str(e).lower()
-        # Check if it's a duplicate key error
         if "duplicate" in error_msg or "unique" in error_msg or "already exists" in error_msg:
             print(f"Player {playerID} already exists in database")
             return "duplicate"
@@ -238,55 +230,49 @@ def dbInsertPlayer(playerID, codename):
             return "db_error"
 
 
-def dbUpdatePlayer(playerID, newCodename):
-    """Update an existing player's codename.
-    
-    This provides a clean interface for the controller to update player codenames.
-    
+def dbDeletePlayer(playerID):
+    """Delete a specific player — for test cleanup only.
+
+    Do not use this during normal gameplay.
+
     Args:
-        playerID (int): The player's ID number
-        newCodename (str): The new codename to set
-    
+        playerID (int): The player's ID number to remove
+
     Returns:
         str: Status of the operation
-            - "success" if update worked
-            - "not_found" if player doesn't exist
-            - "db_error" if database error occurred
+            - "success"   if the player was deleted
+            - "not_found" if no player with that ID existed
+            - "db_error"  if a database error occurred
     """
     try:
-        was_updated = updatePlayer(playerID, newCodename)
-        if was_updated:
+        was_deleted = deletePlayer(playerID)
+        if was_deleted:
             return "success"
         else:
             return "not_found"
     except Exception as e:
-        print(f"Database error in dbUpdatePlayer: {e}")
+        print(f"Database error in dbDeletePlayer: {e}")
         return "db_error"
 
 
 # -----------------------------------------------------------------
-# Week 1 proof / quick testing 
+# Week 1 proof / quick testing
 # -----------------------------------------------------------------
 
 def testOurConnection():
     """Prove that PostgreSQL connects.
-    
-    Our boy Jimmy used the SELECT version(); so we are gonna do the same.
-    This is a simple test to make sure the database is reachable and responding.
-    
+
+    Our boy Jimmy used SELECT version(); so we are gonna do the same.
+
     Returns:
         bool: True if connection successful, False otherwise
     """
-
     try:
         conn = dbconnect()
         curse = conn.cursor()
-
-        # Get the PostgreSQL version to prove we're connected
         curse.execute("SELECT version();")
         version = curse.fetchone()[0]
         print("Connected to -", version)
-
         conn.close()
         return True
     except Exception as e:
@@ -296,22 +282,15 @@ def testOurConnection():
 
 def listOfPlayers(limit=10):
     """For Week 1, just print some rows for debugging purposes.
-    
-    This is a helper function to see what's in the database during development.
-    
+
     Args:
         limit (int): Maximum number of players to display (default: 10)
     """
-
     conn = dbconnect()
     try:
         curse = conn.cursor()
-        
-        # Get the first N players ordered by ID
         curse.execute("SELECT id, codename FROM players ORDER BY id LIMIT %s;", (limit,))
         rows = curse.fetchall()
-        
-        # Print each player
         print(f"\n=== Players in Database (showing up to {limit}) ===")
         for row in rows:
             print(f"  ID: {row[0]:>5} | Codename: {row[1]}")
@@ -320,59 +299,42 @@ def listOfPlayers(limit=10):
         conn.close()
 
 
-# -----------------------------------------------------------------
-# Sprint 2 / Week 2 integration notes 
-# -----------------------------------------------------------------
-# Info about the integration:
-# - The controller flow should be:
-#     found, codename = dbGetCodename(playerID)
-#     if not found:
-#         # UI asks the user for the codename
-#         success = dbInsertPlayer(playerID, codename)
-#         if success:
-#             # Continue with the game
-#         else:
-#             # Handle error (maybe ID already exists?)
-#     else:
-#         # Player exists, use the codename we found
-# 
-# - Afterwards the controller would continue with the equipmentID & UDP broadcast.
-# Keep in mind that this piece of code should never call tkinter or UDP.
-# That stuff lives in the controller and UI layers.
-
-
 if __name__ == "__main__":
-    # Here is the Week 1 test:
-    # Make sure that this file is run from the repo root 
-    # Use the following command in the terminal: python3 db/database.py
-    
+    # Week 1 test:
+    # Make sure this file is run from the repo root
+    # Command: python3 db/database.py
+
     print("\n" + "=" * 60)
     print("Simple Database Connection Test")
     print("=" * 60)
-    
+
     if testOurConnection():
         print("\n Database connection successful!\n")
-        
+
         print("Here's an example list of players:")
         listOfPlayers(5)
 
-        # Hey Will, try a lookup on an existing id
-        print("\n--- Testing obtainCodename() ---")
+        # Test a lookup on an existing ID
+        print("\n--- Testing dbGetCodename() ---")
         print("Looking up player ID 1...")
-        result = obtainCodename(1)
-        if result:
-            print(f"  Found: {result}")
-        else:
+        status, codename = dbGetCodename(1)
+        if status == "found":
+            print(f"  Found: {codename}")
+        elif status == "not_found":
             print("  Not found (player doesn't exist)")
+        else:
+            print("  Database error during lookup")
 
-        # Also, try inserting a test user (then check to see if it appears)
-        print("\n--- Testing addPlayer() ---")
-        print("Note: Uncomment the line below to test inserting a player")
-        # addPlayer(500, "BhodiLi")  # Here's an example Jim used.
-        # print("  Inserted player 500: BhodiLi")
-        # print("\nUpdated player list:")
-        # listOfPlayers(5)
-        
+        # Test an insert (uncomment to run)
+        print("\n--- Testing dbInsertPlayer() ---")
+        print("Note: Uncomment the lines below to test inserting a player")
+        # result = dbInsertPlayer(500, "BhodiLi")
+        # print(f"  Insert result: {result}")
+        # if result == "success":
+        #     print("  Player inserted successfully")
+        #     print("\nUpdated player list:")
+        #     listOfPlayers(5)
+
         print("\n" + "=" * 60)
         print("All tests completed!")
         print("=" * 60 + "\n")
