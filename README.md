@@ -50,25 +50,18 @@ After entering in this code, pull the latest code again. (Section B)
 
 -----
 
-**Before you start the game, let's clear the database (Section D)**
+**Start PostgreSQL and check the database (Section D)**
 
 Open a second terminal and type in the code below.
 
-This count should be zero after entering these commands:
+
 
 1. sudo systemctl start postgresql
 
-It will ask the password for student type "student" (ignore the air quotes).
+It will ask the password for student type "student" (ignore the air quotes). Also, use the provided database as-is. Do not create, alter, or truncate the table.
 
-2. PGPASSWORD=student psql -h localhost -U student -d photon -c "CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, codename VARCHAR(255));"
-3. PGPASSWORD=student psql -h localhost -U student -d photon -c "TRUNCATE TABLE players;"
-4. PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT COUNT(*) FROM players;"
 
-You should see:
-
-- count
-- 0
-- (1 row)
+2. psql -d photon -c "SELECT COUNT(*) FROM players;"
 
 
 -----
@@ -147,8 +140,8 @@ Now close the app please.
 **In Terminal B, clean the test rows**
 
 Please enter the following code:
-- PGPASSWORD=student psql -h localhost -U student -d photon -c "DELETE FROM players WHERE id IN (9901,9902);"
-- PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
+- psql -d photon -c "DELETE FROM players WHERE id IN (9901,9902);"
+- psql -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
 
 You should see an id | codename table with 0 rows.
 
@@ -185,7 +178,7 @@ Click Add Player for each one.
 
 In Terminal B, type the following code:
 
-- PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
+- psql -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
 
 You should see:
 
@@ -197,34 +190,6 @@ Now you can see that the database is inserts players through the app properly.
 
 -----
 
-**Verify that updates are reflected in the Database**
-
-In the app, update Player 1:
-
-- Player ID: 9901
-- Codename: Gambit
-- Equipment ID: 501
-
-Click Add Player, then in Terminal B enter the following: 
-
-- PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT id, codename FROM players WHERE id=9901;"
-
-You should see:
-
-- ID   | Codename
-- 9901 | Gambit
-
-Then run:
-
-- PGPASSWORD=student psql -h localhost -U student -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
-
-You should see:
-
-- ID   | Codename
-- 9901 | Gambit
-- 9902 | Wolverine
-
-Now you can see that the database updates players through the app properly.
 
 -----
 
@@ -232,10 +197,10 @@ Now you can see that the database updates players through the app properly.
 
 Just enter the following in Terminal B:
 
-- PGPASSWORD=student psql -h localhost -U student -d photon -c "DELETE FROM players WHERE id IN (9901,9902);"
+- psql -d photon -c "DELETE FROM players WHERE id IN (9901,9902);"
 
-You should see:
-- (0 rows)
+You can verify removal by running:
+- psql -d photon -c "SELECT id, codename FROM players WHERE id IN (9901,9902) ORDER BY id;"
 
 Great job! Now you know that the database code works properly.
 
