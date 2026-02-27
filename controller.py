@@ -37,7 +37,7 @@ def changePhase(phase):
 def recordLog(message):
     """
     Use this to add messages to the event log.
-    These messages will displayed to the action screen later.
+    These messages will displayed to the action screen later. 
     """
     state.eventLog.append(str(message))
 
@@ -64,9 +64,9 @@ def addPlayerToTeam(team, playerID, codename, equipmentID):
     Later, this will also trigger the UDP broadcast of equipmentID.
     """
 
-    capitalTeamname = str(team).upper()  # Converts the team names to Uppercase so inputs can be compared easily
+    capitalTeamname = str(team).upper() #Converts the team names to Uppercase so inputs can be compared easily
 
-    # With the new inputted info, a new PlayerData object is created.
+    # With the new inputted info, a new PlayerData object is created. 
     player = PlayerData(
         playerID=playerID,
         codename=codename,
@@ -83,56 +83,89 @@ def addPlayerToTeam(team, playerID, codename, equipmentID):
         # If the UI passes an incorrect team name, an error is stopped and a message shown
         raise ValueError("Uh Oh! Your team must be 'RED' or 'GREEN'.")
 
-    # This is a play-by-play log line of what is happening
+    # This is a play-by-play log line of what is happening 
     recordLog("Added " + codename + " (ID: " + str(playerID) + ") to " +
-              capitalTeamname + " with equipment " + str(equipmentID))
+               capitalTeamname + " with equipment " + str(equipmentID))
 
     # After a player is added, then equipmentID is broadcast
-    netBroadcastEquipment(equipmentID)
-
+    # Since this is Week 1, there is no real UDP yet, so we call a "Net Stub" = "Networking Stub".
+    netBroadcastEquipment(equipmentID) 
 
 # -------------------------------------------------
 # REAL Database Functions (Not Stubs anymore!!!)
 # -------------------------------------------------
-# These now call Will's real database.py functions.
-#
-# Player lookup/insert flow:
-#   1. Call dbGetCodename(playerID)
-#   2. If "found"     → use the codename as-is. Do NOT insert or update.
-#   3. If "not_found" → ask the user for a codename, then call dbInsertPlayer()
-#   4. If "db_error"  → surface the error to the UI
-#
-# There is no update path. Existing players are always used as-is.
+# These now call Will's real database.py functions
 
 def dbGetCodename(playerID):
     """
-    Looks up a player's codename in the database by playerID.
+  
+    
+    This searches the PostgreSQL table and returns a codename.
 
     Returns:
-        tuple:
-            - ("found",     "Codename") if player exists — use codename as-is
-            - ("not_found", None)       if player is not in the DB
-            - ("db_error",  None)       if a database error occurred
+    - ("found", "Codename") if player exists
+    - ("not_found", None) if player doesn't exist
+    - ("db_error", None) if database error occurred
     """
-    status, codename = database.dbGetCodename(playerID)
-    return status, codename
+    try:
+        found, codename = database.dbGetCodename(playerID)
+        if found:
+            return "found", codename
+        return "not_found", None
+    except Exception as e:
+        print(f"dbGetCodename error: {e}")
+        return "db_error", None
 
 
 def dbInsertPlayer(playerID, codename):
     """
-    Inserts a new player into the database.
-
-    Only call this after dbGetCodename returned "not_found".
-    Never call this to overwrite an existing player.
-
+  
+    
+    This inserts a new player into the database.
+    
     Returns:
-        str:
-            - "success"   if the insert worked
-            - "duplicate" if the player ID already exists
-            - "db_error"  if a database error occurred
+    - "success" if insert worked
+    - "duplicate" if player already exists
+    - "db_error" if database error occurred
     """
-    status = database.dbInsertPlayer(playerID, codename)
-    return status
+    try:
+        inserted = database.dbInsertPlayer(playerID, codename)
+        if inserted:
+            return "success"
+
+        # Error oh No! distinguish duplicate vs db_error
+        found, _ = database.dbGetCodename(playerID)
+        if found:
+            return "duplicate"
+        return "db_error"
+    except Exception as e:
+        print(f"dbInsertPlayer error: {e}")
+        return "db_error"
+
+def dbUpdatePlayer(playerID, newCodename):
+    """
+    Database Function 
+    
+    This updates an existing player's codename in the database.
+    
+    Returns:
+    - "success" if update worked
+    - "not_found" if player doesn't exist
+    - "db_error" if database error occurred
+    """
+    try:
+        updated = database.dbUpdatePlayer(playerID, newCodename)
+        if updated:
+            return "success"
+
+        # Update failed: distinguish not_found vs db_error
+        found, _ = database.dbGetCodename(playerID)
+        if not found:
+            return "not_found"
+        return "db_error"
+    except Exception as e:
+        print(f"dbUpdatePlayer error: {e}")
+        return "db_error"
 
 
 # -------------------------------------------------
@@ -147,6 +180,7 @@ def netSetIp(ip):
     """
     udp.netSetIp(ip)
     recordLog("The network IP is set to " + str(ip))
+    #Print to console so we can prove it works
     print("The network IP is set to " + str(ip))
 
 
@@ -158,7 +192,6 @@ def netBroadcastEquipment(equipmentID):
     """
     udp.netBroadcastEquipment(equipmentID)
     recordLog("This equipment ID " + str(equipmentID) + " would be broadcast.")
-
 
 listener_is_running = False
 
@@ -181,29 +214,33 @@ def netBeginUDP_Listener():
 
 
 # -----------------------------
-# Caleb Integration Test
-# To Run type: python controller.py in one terminal. In another terminal, type :
+# Caleb  Integration Test
+# To Run type: python controller.py in one terminal. In another terminal, type : 
 # python -c "import socket; sock=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); sock.sendto(b'53', ('127.0.0.1', 7501)); print('Hit sent!')"
 # -----------------------------
 if __name__ == "__main__":
     import time
-
+    
     print("--- 1. Testing System Reset ---")
     clearItAll()
 
     print("--- 2. Starting UDP Listener (Check for 'UDP received' messages) ---")
+    # This connects the network listener to the event log
     netBeginUDP_Listener()
 
     print("--- 3. Testing Player Add & Broadcast ---")
+    # This should trigger a broadcast on port 7500
     addPlayerToTeam("RED", 1, "Caleb", 112)
-
-    print("--- SYSTEM IS LIVE ---")
+    
+    print("--- SYSTEM IS LIVE ---")  
     print("Waiting for hits on Port 7501...")
     print("Press Ctrl+C to stop.")
-
+    
+    # Keep the program alive so the background thread can listen
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         print("\nTest finished.")
+        # Print the log to prove the Controller 'heard' the network
         print("Final Event Log:", state.eventLog)
