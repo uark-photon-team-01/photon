@@ -6,10 +6,15 @@
 from model import Game_State, PlayerData
 from net import udp  # Caleb added
 from db import database  # Will's database functions - REAL DB CONNECTION!
+import time
 
 # This is the app's only shared game state.
 # Everyone will read & write through this object.
 state = Game_State()
+warningSeconds = 30
+playSeconds = 6 * 60
+
+lastTickOfTimer = None
 
 
 # ------------------------------
@@ -41,6 +46,104 @@ def recordLog(message):
     """
     state.eventLog.append(str(message))
 
+def resetTheActionState():
+    """
+    For new matches, reset the gameplay state.
+
+    This won't remove players from the rosters.
+    It only resets things that live in the live action screen / match state.
+    """
+    global lastTickOfTimer
+
+    for player in state.redTeam + state.greenTeam:
+        player.score = 0
+        player.has_baseIcon = False
+
+    state.eventLog.clear()
+    state.time_remaining = 0
+    state.timer_running = False
+    lastTickOfTimer = None
+
+
+def startGame():
+    """
+    Starts a new match.
+    """
+    global lastTickOfTimer
+
+    resetTheActionState()
+
+    state.phase = "WARNING"
+    state.time_remaining = warningSeconds
+    state.timer_running = True
+    lastTickOfTimer = time.monotonic()
+
+    recordLog("Game start has been requested.")
+    recordLog("A 30-second warning countdown has begun. GET READY.")
+
+
+def moveOneSecond():
+    """
+    This will advance the game clock by one second only.
+    Phase transitions are handled here when the timer reaches zero.
+    """
+    if state.time_remaining > 0:
+        state.time_remaining -= 1
+
+    if state.time_remaining > 0:
+        return
+
+    if state.phase == "WARNING":
+        state.phase = "PLAYING"
+        state.time_remaining = playSeconds
+        recordLog("The warning countdown is over. The live game has begun.")
+        netBroadcastEquipment(202)
+
+    elif state.phase == "PLAYING":
+        state.phase = "ENDED"
+        state.timer_running = False
+        recordLog("Uh Oh! The Game clock has expired. Game ended.")
+
+        for _ in range(3):
+            netBroadcastEquipment(221)
+
+
+def updateTimer():
+    """
+    This function will make sure that the controller clock is in sync with time.
+    The user interface should call this on a short repeating sequence
+    """
+    global lastTickOfTimer
+
+    if not state.timer_running:
+        return state.time_remaining
+
+    if lastTickOfTimer is None:
+        lastTickOfTimer = time.monotonic()
+        return state.time_remaining
+
+    now = time.monotonic()
+    secondsElapsed = int(now - lastTickOfTimer)
+
+    if secondsElapsed <= 0:
+        return state.time_remaining
+
+    for _ in range(secondsElapsed):
+        if not state.timer_running:
+            break
+        moveOneSecond()
+
+    lastTickOfTimer += secondsElapsed
+    return state.time_remaining
+
+
+def formatTimeRemaining():
+    """
+    This is not used at the moment but will be for the Action screen later.
+    """
+    minutes, seconds = divmod(max(state.time_remaining, 0), 60)
+    return f"{minutes}:{seconds:02d}"
+
 
 def clearItAll():
     """
@@ -49,9 +152,8 @@ def clearItAll():
     """
     state.redTeam.clear()
     state.greenTeam.clear()
-    state.eventLog.clear()
 
-    state.time_remaining = 0
+    resetTheActionState()
     state.phase = "Beginning"
 
     recordLog("All players have been cleared and the game has been reset.")
