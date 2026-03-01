@@ -5,7 +5,7 @@ The Sprint 2 requirements for this file are the following:
 - F12 clears all entries (it will call the controller)
 - F5 starts game (switch to action screen later)
 - Simplified to ONE button: Add Player handles all scenarios
-- NEW: Track used Player IDs to prevent duplicates in the same game session
+- Track used Player IDs to prevent duplicates in the same game session
 
 Jim's starter material will be used here.
 - In Jim's repo there are assets & screen references:
@@ -154,8 +154,8 @@ class EntryScreen(tk.Frame):
         buttons_frame.pack(fill="x", pady=(10, 0))
 
         self.keyButton(buttons_frame, "F1\nEntry", self.on_f1).pack(side="left", padx=6)
-        self.keyButton(buttons_frame, "F3\nStart Game", self.on_f5).pack(side="left", padx=6)
-        self.keyButton(buttons_frame, "F5\nStart Game", self.on_f5).pack(side="left", padx=6)
+        self.keyButton(buttons_frame, "F3\nStart Game", self.).pack(side="left", padx=6)
+        self.keyButton(buttons_frame, "F5\nStart Game", self.).pack(side="left", padx=6)
         self.keyButton(buttons_frame, "F12\nClear Game", self.on_f12).pack(side="right", padx=6)
 
         # Footer hint
@@ -500,10 +500,11 @@ class EntryScreen(tk.Frame):
 
     def on_f5(self):
         try:
-            controller.changePhase("ACTION")
+            controller.startGame()
         except Exception as e:
-            self.statusVariable.set(f"changePhase not ready: {e}")
-
+            self.statusVariable.set(f"startGame not ready: {e}")
+            return
+    
         if self.startGame:
             self.startGame()
         else:
