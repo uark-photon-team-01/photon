@@ -37,17 +37,14 @@ def getGreenTotalScore():
 
 
 def getActionSnapshot():
-    """
-    One clean payload for Emma's Action screen.
-    """
     return {
         "phase": state.phase,
         "time_remaining": state.time_remaining,
         "red_total_score": getRedTotalScore(),
         "green_total_score": getGreenTotalScore(),
         "event_log": list(state.eventLog),
-        "red_roster": list(state.redTeam),
-        "green_roster": list(state.greenTeam),
+        "red_roster": getSortedRedRoster(),
+        "green_roster": getSortedGreenRoster(),
     }
 
 def sortRosterKey(player):
@@ -260,7 +257,7 @@ def applyEvent(event):
 
     """
     if state.phase != "PLAYING":
-        recordLog("The event was ignored because the game is not in the "Playing" phase at the moment.")
+        recordLog("The event was ignored because the game is not in the Playing phase at the moment.")
         return False
 
     eventType = str(event.get("type", "")).upper()
