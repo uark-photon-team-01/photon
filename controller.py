@@ -167,6 +167,138 @@ def formatTimeRemaining():
     minutes, seconds = divmod(max(state.time_remaining, 0), 60)
     return f"{minutes}:{seconds:02d}"
 
+def findPlayerByEquipmentID(equipmentID):
+    """
+    A player in can be found in either roster using their equipment/transmitter ID.
+    The PlayerData object is returned or None if not found.
+    """
+    for player in state.redTeam + state.greenTeam:
+        if player.equipmentID == equipmentID:
+            return player
+    return None
+
+
+def playersAreOnSameTeam(playerOne, playerTwo):
+    """
+    If both players are on the same team this will return true.
+    """
+    if playerOne is None or playerTwo is None:
+        return False
+    return playerOne.team == playerTwo.team
+
+def applyNormalHitScore(tagger, tagged):
+    """
+    The normal pvp scoring rules are applied
+
+    Ex: if an opponent is hit:
+        tagger +10
+
+    if someone is hit on the same-team:
+        tagger -10
+        tagged -10
+    """
+    if playersAreOnSameTeam(tagger, tagged):
+        tagger.score -= 10
+        tagged.score -= 10
+        recordLog(
+            f"Uh Oh! There was a same team hit! Player {tagger.codename} hit teammate {tagged.codename}. "
+            f"Sadly, both players now lose 10 points."
+        )
+    else:
+        tagger.score += 10
+        recordLog(
+            f"Great! A hit was scored. Player {tagger.codename} tagged {tagged.codename}. "
+            f"{tagger.codename} gains 10 points."
+        )
+
+def applyBaseHitScore(tagger, baseCode):
+    """
+    Base scoring will be based on the hit code.
+    Players who trigger the base event are marked with a base icon.
+    """
+    
+    if baseCode == 53:
+        tagger.score += 100
+        tagger.has_baseIcon = True
+        recordLog(
+            f"The was a score on a base. Player {tagger.codename} triggered base code 53. "
+            f"Green wins 100 points."
+        )
+
+    elif baseCode == 43:
+        tagger.score += 100
+        tagger.has_baseIcon = True
+        recordLog(
+            f"The was a score on a base. Player {tagger.codename} triggered base code 43. "
+            f"Red wins 100 points."
+        )
+
+def apply_event(event):
+    """
+
+    When applying incoming events, the game logic function is used.
+
+    """
+    if state.phase != "PLAYING":
+        recordLog("The event was ignored because the game is not in the "Playing" phase at the moment.")
+        return False
+
+    eventType = str(event.get("type", "")).upper()
+
+    transmitterID = event.get("transmitter")
+    hitID = event.get("hit")
+
+    if transmitterID is None or hitID is None:
+        recordLog(f"An Invalid event was received. There's a missing transmitter or hit field -> {event}")
+        return False
+
+    tagger = findPlayerByEquipmentID(transmitterID)
+    if tagger is None:
+        recordLog(f"An Invalid event was received. There was no player found with equipment ID {transmitterID}.")
+        return False
+
+    if eventType == "BASE":
+        if hitID not in (43, 53):
+            recordLog(f"An Invalid base event was received. There was a unsupported base code {hitID}.")
+            return False
+
+        applyBaseHitScore(tagger, hitID)
+        return True
+
+    if eventType == "TAG":
+        tagged = findPlayerByEquipmentID(hitID)
+
+        if tagged is None:
+            recordLog(f"An Invalid tag event was received.  There's no player found with the equipment ID {hitID}.")
+            return False
+
+        if tagger.equipmentID == tagged.equipmentID:
+            recordLog(f"An Invalid tag event was received. The Player {tagger.codename} cannot tag themselves.")
+            return False
+
+        applyNormalHitScore(tagger, tagged)
+        return True
+
+    recordLog(f"An Invalid event was received. There was an unknown event type '{eventType}'.")
+    return False
+
+def buildEventFromTransmitHit(transmitterID, hitID):
+    """
+    The raw transmitter:hit values are converted into the event shapes used by apply_event().
+    Caleb's receiver can call this later.
+    """
+    if hitID in (43, 53):
+        return {
+            "type": "BASE",
+            "transmitter": transmitterID,
+            "hit": hitID
+        }
+
+    return {
+        "type": "TAG",
+        "transmitter": transmitterID,
+        "hit": hitID
+    }
 
 def clearItAll():
     """
