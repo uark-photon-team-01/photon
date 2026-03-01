@@ -28,6 +28,28 @@ def grabState():
     """
     return state
 
+def getRedTotalScore():
+    return sum(player.score for player in state.redTeam)
+
+
+def getGreenTotalScore():
+    return sum(player.score for player in state.greenTeam)
+
+
+def getActionSnapshot():
+    """
+    One clean payload for Emma's Action screen.
+    """
+    return {
+        "phase": state.phase,
+        "time_remaining": state.time_remaining,
+        "red_total_score": getRedTotalScore(),
+        "green_total_score": getGreenTotalScore(),
+        "event_log": list(state.eventLog),
+        "red_roster": list(state.redTeam),
+        "green_roster": list(state.greenTeam),
+    }
+
 
 def changePhase(phase):
     """
@@ -101,6 +123,7 @@ def moveOneSecond():
 
     elif state.phase == "PLAYING":
         state.phase = "ENDED"
+        state.time_remaining = 0
         state.timer_running = False
         recordLog("Uh Oh! The Game clock has expired. Game ended.")
 
