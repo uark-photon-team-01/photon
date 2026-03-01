@@ -50,16 +50,36 @@ def getActionSnapshot():
         "green_roster": list(state.greenTeam),
     }
 
+def sortRosterKey(player):
+    """
+    Score is sorted from highest to lowest.
+    If there's a tie, the codenames are sorted alphabetically
+    """
+    return (-player.score, player.codename.lower())
+
+
+def getSortedRedRoster():
+    """
+    The red roster sorted by score from highest to lowest and returned
+    If there's a tie, the codenames are sorted alphabetically
+    """
+    return sorted(state.redTeam, key=sortRosterKey)
+
+
+def getSortedGreenRoster():
+    """
+    The green roster sorted by score from highest to lowest and returned
+    If there's a tie, the codenames are sorted alphabetically
+    """
+    return sorted(state.greenTeam, key=sortRosterKey)
 
 def changePhase(phase):
     """
-    This will change what part of the app we are in.
-    For Example: "Splash", "Beginning", "Playing", etc.
-    The UI can use this to decide which screen will be shown.
+    This function changes what part of the app we are in.
+    Using this, the UI can pick which screen will be shown.
     """
     state.phase = phase
-    recordLog("The Game is now in the " + str(phase) + " phase.")
-
+    recordLog("The current phase of the Game is " + str(phase) + ".")
 
 def recordLog(message):
     """
@@ -233,7 +253,7 @@ def applyBaseHitScore(tagger, baseCode):
             f"Red wins 100 points."
         )
 
-def apply_event(event):
+def applyEvent(event):
     """
 
     When applying incoming events, the game logic function is used.
@@ -284,7 +304,7 @@ def apply_event(event):
 
 def buildEventFromTransmitHit(transmitterID, hitID):
     """
-    The raw transmitter:hit values are converted into the event shapes used by apply_event().
+    The raw transmitter:hit values are converted into the event shapes used by applyEvent().
     Caleb's receiver can call this later.
     """
     if hitID in (43, 53):
@@ -299,6 +319,121 @@ def buildEventFromTransmitHit(transmitterID, hitID):
         "transmitter": transmitterID,
         "hit": hitID
     }
+
+def isBaseCode(hitID):
+    """
+    if the hit ID is one of the project base codes then this should return true
+    """
+    return hitID in (43, 53)
+
+def parseUDPMessage(rawMessage):
+    """
+    Here, raw UDP strings are converted into a parsed event dictionary.
+    if the input is valid, a dictionary is returned.
+    if the input is invalid, nothing is returned
+    """
+    if rawMessage is None:
+        recordLog("There was an invalid UDP input error: the message was None.")
+        return None
+
+    text = str(rawMessage).strip()
+
+    if text == "":
+        recordLog("There was an invalid UDP input error: the message is empty.")
+        return None
+
+    if ":" not in text:
+        recordLog(f"There was an invalid UDP input error: there is a missing ':' separator in the following: {text}")
+        return None
+
+    parts = text.split(":")
+
+    if len(parts) != 2:
+        recordLog(f"There was an invalid UDP input error: There was an expected transmitter and hit format in {text}")
+        return None
+
+    transmitterText = parts[0].strip()
+    hitText = parts[1].strip()
+
+    if transmitterText == "" or hitText == "":
+        recordLog(f"There was an invalid UDP input error: there is a missing transmitter or hit value in {text}")
+        return None
+
+    try:
+        transmitterID = int(transmitterText)
+        hitID = int(hitText)
+    except ValueError:
+        recordLog(f"There was an invalid UDP input error: the transmitter and hit has to be integers in {text}")
+        return None
+
+    if isBaseCode(hitID):
+        return {
+            "type": "BASE",
+            "transmitter": transmitterID,
+            "hit": hitID
+        }
+
+    return {
+        "type": "TAG",
+        "transmitter": transmitterID,
+        "hit": hitID
+    }
+
+def validateEvent(event):
+    """
+    Before applyEvent() changes any scores, a parsed event is validated
+    if valid this function returns true. if false, it returns false.
+    """
+    if event is None:
+        return False
+
+    if state.phase != "PLAYING":
+        recordLog("The event was ignored because the game is not in the Playing phase at the moment.")
+        return False
+
+    eventType = str(event.get("type", "")).upper()
+    transmitterID = event.get("transmitter")
+    hitID = event.get("hit")
+
+    if eventType not in ("TAG", "BASE"):
+        recordLog(f"Invalid event error: there is an unknown type in {event}")
+        return False
+
+    if transmitterID is None or hitID is None:
+        recordLog(f"Invalid event error: there is a missing transmitter or hit in {event}")
+        return False
+
+    tagger = findPlayerByEquipmentID(transmitterID)
+    if tagger is None:
+        recordLog(f"Invalid event error: the transmitter equipment ID {transmitterID} is unknown.")
+        return False
+
+    if eventType == "BASE":
+        if not isBaseCode(hitID):
+            recordLog(f"Invalid base event error: the following base code is not supported {hitID}.")
+            return False
+        return True
+
+    tagged = findPlayerByEquipmentID(hitID)
+    if tagged is None:
+        recordLog(f"Invalid tag event error: there was no player found with the following equipment ID: {hitID}.")
+        return False
+
+    if transmitterID == hitID:
+        recordLog(f"Invalid tag event error: the player {transmitterID} cannot tag themselves.")
+        return False
+
+    return True
+
+def handleIncomingUDPMessage(rawMessage):
+    """
+    """
+    parsedEvent = parseUDPMessage(rawMessage)
+
+    if not validateEvent(parsedEvent):
+        return False
+
+    return applyEvent(parsedEvent)
 
 def clearItAll():
     """
@@ -431,7 +566,7 @@ def netBeginUDP_Listener():
         # If it's already running, do nothing!
         return
 
-    udp.netBeginUDP_Listener(recordLog)
+    udp.netBeginUDP_Listener(handleIncomingUDPMessage)
     recordLog("UDP Listener started on port 7501")
 
     listener_is_running = True
