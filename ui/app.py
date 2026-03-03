@@ -162,8 +162,8 @@ class EntryScreen(tk.Frame):
         buttons_frame.pack(fill="x", pady=(10, 0))
 
         self.keyButton(buttons_frame, "F1\nEntry", self.on_f1).pack(side="left", padx=6)
-        self.keyButton(buttons_frame, "F3\nStart Game", self.on_f5).pack(side="left", padx=6)
-        self.keyButton(buttons_frame, "F5\nStart Game", self.on_f5).pack(side="left", padx=6)
+        self.keyButton(buttons_frame, "F3\nStart Game", self.startf5).pack(side="left", padx=6)
+        self.keyButton(buttons_frame, "F5\nStart Game", self.startf5).pack(side="left", padx=6)
         self.keyButton(buttons_frame, "F12\nClear Game", self.on_f12).pack(side="right", padx=6)
 
         tk.Label(
@@ -427,13 +427,18 @@ class EntryScreen(tk.Frame):
         self._clearEntryFields()
         self.statusVariable.set("Cleared all entries.")
 
-    def on_f5(self):
-        """F5: transition to the action screen."""
-        controller.changePhase("ACTION")
-        if self.startGame:
-            self.startGame()
-        else:
-            self.statusVariable.set("Game started (action screen later).")
+    def startf5(self):
+      """This is F5. Here, the controller game flow begins, and then goes to the action screen."""
+      try:
+          controller.startGame()
+      except Exception as e:
+          self.statusVariable.set(f"Unfortunately, the game could not be started. Here's why:  {e}")
+          return
+  
+      if self.startGame:
+          self.startGame()
+      else:
+          self.statusVariable.set("The Game has begun!")
 
     def refreshTables(self):
         """Paint roster data into the 15-row tables."""
@@ -477,17 +482,12 @@ class ActionScreen(tk.Frame):
         super().__init__(parent, bg="black")
         self.on_return_entry = on_return_entry
 
-        # Timer state
-        self._timer_job = None          # holds the after() job id so we can cancel
-        self._time_remaining = GAME_SECONDS
-        self._start_count = START_COUNTDOWN
-        self._phase = "starting"        # "starting" | "playing" | "warning" | "done"
-
+        # UI refresh state
+        self._refresh_job = None
+        self._last_log_index = 0
+        
         self._build_layout()
-        self._populate_rosters()
-
-        # Kick off the start countdown after the screen is fully drawn
-        self.after(500, self._tick_start_countdown)
+        self._refresh_action_screen()
 
     # ------------------------------------------------------------------
     # Layout builder
@@ -619,24 +619,17 @@ class ActionScreen(tk.Frame):
     # Roster population
     # ------------------------------------------------------------------
 
-    def _populate_rosters(self):
+    def _populate_rosters(self, snapshot):
         """
-        Read players from the shared controller state and build scoreboard
-        rows for each team. Shows codename and score (0 to start).
+        Use the controller snapshot to build the scoreboards and totals.
         """
-        state = controller.grabState()
+        self._build_scoreboard(self.redScoreFrame, snapshot["red_roster"], "#ff4444")
+        self._build_scoreboard(self.greenScoreFrame, snapshot["green_roster"], "#44ff44")
+    
+        self.redTotalLabel.configure(text=str(snapshot["red_total_score"]))
+        self.greenTotalLabel.configure(text=str(snapshot["green_total_score"]))
 
-        self._build_scoreboard(self.redScoreFrame, state.redTeam, "#ff4444")
-        self._build_scoreboard(self.greenScoreFrame, state.greenTeam, "#44ff44")
-
-        # Update team totals
-        self.redTotalLabel.configure(text=str(self._team_total(state.redTeam)))
-        self.greenTotalLabel.configure(text=str(self._team_total(state.greenTeam)))
-
-        # Populate event log with anything already logged
-        for entry in state.eventLog:
-            self._log(entry)
-
+      
     def _build_scoreboard(self, frame, team, color):
         """Build one row per player in the given frame."""
         for widget in frame.winfo_children():
@@ -830,16 +823,16 @@ def startApp():
             controller.clearItAll()
 
     def f5Start(event):
-        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "on_f5"):
-            presentScreen["screen"].on_f5()
+        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "startf5"):
+            presentScreen["screen"].startf5()
 
     def f1Entry(event):
         if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "on_f1"):
             presentScreen["screen"].on_f1()
 
     def f3Start(event):
-        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "on_f5"):
-            presentScreen["screen"].on_f5()
+        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "startf5"):
+            presentScreen["screen"].startf5()
 
     root.bind("<F1>", f1Entry)
     root.bind("<F3>", f3Start)
