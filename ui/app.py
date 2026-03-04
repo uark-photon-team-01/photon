@@ -677,11 +677,11 @@ class ActionScreen(tk.Frame):
     # ------------------------------------------------------------------
 
     def logWidgetCleared(self):
-    """The visible event log panel is cleared."""
-    self.eventLog.configure(state="normal")
-    self.eventLog.delete("1.0", "end")
-    self.eventLog.configure(state="disabled")
-
+        """The visible event log panel is cleared."""
+        self.eventLog.configure(state="normal")
+        self.eventLog.delete("1.0", "end")
+        self.eventLog.configure(state="disabled")
+    
 
     def phaseAndTimerUpdate(self, snapshot):
         """
