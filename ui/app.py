@@ -37,7 +37,6 @@ teamRows = 15         # number of roster rows (0-14)
 # Game timing constants
 GAME_SECONDS      = 360   # 6 minutes full game clock
 WARNING_SECONDS   = 30    # 30-second warning threshold
-START_COUNTDOWN   = 5     # 5-second start countdown sequence
 
 
 # =============================================================================
@@ -162,8 +161,8 @@ class EntryScreen(tk.Frame):
         buttons_frame.pack(fill="x", pady=(10, 0))
 
         self.keyButton(buttons_frame, "F1\nEntry", self.on_f1).pack(side="left", padx=6)
-        self.keyButton(buttons_frame, "F3\nStart Game", self.on_f5).pack(side="left", padx=6)
-        self.keyButton(buttons_frame, "F5\nStart Game", self.on_f5).pack(side="left", padx=6)
+        self.keyButton(buttons_frame, "F3\nStart Game", self.startf5).pack(side="left", padx=6)
+        self.keyButton(buttons_frame, "F5\nStart Game", self.startf5).pack(side="left", padx=6)
         self.keyButton(buttons_frame, "F12\nClear Game", self.on_f12).pack(side="right", padx=6)
 
         tk.Label(
@@ -427,13 +426,18 @@ class EntryScreen(tk.Frame):
         self._clearEntryFields()
         self.statusVariable.set("Cleared all entries.")
 
-    def on_f5(self):
-        """F5: transition to the action screen."""
-        controller.changePhase("ACTION")
-        if self.startGame:
-            self.startGame()
-        else:
-            self.statusVariable.set("Game started (action screen later).")
+    def startf5(self):
+      """This is F5. Here, the controller game flow begins, and then goes to the action screen."""
+      try:
+          controller.startGame()
+      except Exception as e:
+          self.statusVariable.set(f"Unfortunately, the game could not be started. Here's why:  {e}")
+          return
+  
+      if self.startGame:
+          self.startGame()
+      else:
+          self.statusVariable.set("The Game has begun!")
 
     def refreshTables(self):
         """Paint roster data into the 15-row tables."""
@@ -477,17 +481,12 @@ class ActionScreen(tk.Frame):
         super().__init__(parent, bg="black")
         self.on_return_entry = on_return_entry
 
-        # Timer state
-        self._timer_job = None          # holds the after() job id so we can cancel
-        self._time_remaining = GAME_SECONDS
-        self._start_count = START_COUNTDOWN
-        self._phase = "starting"        # "starting" | "playing" | "warning" | "done"
-
+        # UI refresh state
+        self._refresh_job = None
+        self._last_log_index = 0
+        
         self._build_layout()
-        self._populate_rosters()
-
-        # Kick off the start countdown after the screen is fully drawn
-        self.after(500, self._tick_start_countdown)
+        self.actionScreenUpdate()
 
     # ------------------------------------------------------------------
     # Layout builder
@@ -511,7 +510,7 @@ class ActionScreen(tk.Frame):
 
         self.timerLabel = tk.Label(
             topBar,
-            text=self._fmt_start(START_COUNTDOWN),
+            text=controller.formatTimeRemaining(),
             fg="white",
             bg="black",
             font=("Arial", 48, "bold")
@@ -619,24 +618,17 @@ class ActionScreen(tk.Frame):
     # Roster population
     # ------------------------------------------------------------------
 
-    def _populate_rosters(self):
+    def _populate_rosters(self, snapshot):
         """
-        Read players from the shared controller state and build scoreboard
-        rows for each team. Shows codename and score (0 to start).
+        Use the controller snapshot to build the scoreboards and totals.
         """
-        state = controller.grabState()
+        self._build_scoreboard(self.redScoreFrame, snapshot["red_roster"], "#ff4444")
+        self._build_scoreboard(self.greenScoreFrame, snapshot["green_roster"], "#44ff44")
+    
+        self.redTotalLabel.configure(text=str(snapshot["red_total_score"]))
+        self.greenTotalLabel.configure(text=str(snapshot["green_total_score"]))
 
-        self._build_scoreboard(self.redScoreFrame, state.redTeam, "#ff4444")
-        self._build_scoreboard(self.greenScoreFrame, state.greenTeam, "#44ff44")
-
-        # Update team totals
-        self.redTotalLabel.configure(text=str(self._team_total(state.redTeam)))
-        self.greenTotalLabel.configure(text=str(self._team_total(state.greenTeam)))
-
-        # Populate event log with anything already logged
-        for entry in state.eventLog:
-            self._log(entry)
-
+      
     def _build_scoreboard(self, frame, team, color):
         """Build one row per player in the given frame."""
         for widget in frame.winfo_children():
@@ -677,102 +669,90 @@ class ActionScreen(tk.Frame):
         self.eventLog.see("end")
         self.eventLog.configure(state="disabled")
 
+  
+
     # ------------------------------------------------------------------
     # Timer logic
     # ------------------------------------------------------------------
 
-    def _fmt_start(self, count):
-        """Format the start countdown display."""
-        if count <= 0:
-            return "GO!"
-        return str(count)
+    def logWidgetCleared(self):
+        """The visible event log panel is cleared."""
+        self.eventLog.configure(state="normal")
+        self.eventLog.delete("1.0", "end")
+        self.eventLog.configure(state="disabled")
+    
 
-    def _fmt_clock(self, seconds):
-        """Format seconds as M:SS for the game clock."""
-        m = seconds // 60
-        s = seconds % 60
-        return f"{m}:{s:02d}"
-
-    def _tick_start_countdown(self):
+    def phaseAndTimerUpdate(self, snapshot):
         """
-        Phase 1 — Start countdown: counts down from START_COUNTDOWN to GO!
-        Transitions to the main game clock once GO! is shown.
+        The timer and phase labels from the controller state are updated.
         """
-        if self._start_count > 0:
-            self.timerLabel.configure(
-                text=self._fmt_start(self._start_count),
-                fg="white"
-            )
-            self.phaseLabel.configure(text="GET READY", fg="yellow")
-            self._start_count -= 1
-            self._timer_job = self.after(1000, self._tick_start_countdown)
+        phase = str(snapshot["phase"]).upper()
+    
+        if phase == "WARNING":
+            self.phaseLabel.configure(text="30 Second Warning!", fg="orange")
+        elif phase == "PLAYING":
+            self.phaseLabel.configure(text="Game On!", fg="lime")
+        elif phase == "ENDED":
+            self.phaseLabel.configure(text="Game Over!", fg="red")
         else:
-            # Show GO! briefly then switch to game clock
-            self.timerLabel.configure(text="GO!", fg="lime")
-            self.phaseLabel.configure(text="GAME ON", fg="lime")
-            self._log("--- GAME STARTED ---")
-            self._timer_job = self.after(800, self._start_game_clock)
-
-    def _start_game_clock(self):
-        """Transition from start countdown into the main game clock."""
-        self._time_remaining = GAME_SECONDS
-        self._phase = "playing"
-        controller.changePhase("Playing")
-        self._tick_game_clock()
-
-    def _tick_game_clock(self):
-        """
-        Phase 2 — Game clock: counts down from GAME_SECONDS to 0.
-        Triggers the 30-second warning when time hits WARNING_SECONDS.
-        """
-        if self._time_remaining <= 0:
-            # Game over
-            self._phase = "done"
-            self.timerLabel.configure(text="0:00", fg="red")
-            self.phaseLabel.configure(text="GAME OVER", fg="red")
-            self._log("--- GAME OVER ---")
-            controller.changePhase("Done")
-            return
-
-        if self._time_remaining == WARNING_SECONDS and self._phase != "warning":
-            # 30-second warning
-            self._phase = "warning"
-            self.phaseLabel.configure(text="⚠ 30 SECOND WARNING", fg="orange")
-            self._log("--- 30 SECOND WARNING ---")
-
-        # Update the timer display
-        color = "orange" if self._phase == "warning" else "white"
+            self.phaseLabel.configure(text=phase, fg="yellow")
+    
         self.timerLabel.configure(
-            text=self._fmt_clock(self._time_remaining),
-            fg=color
+            text=controller.formatTimeRemaining(),
+            fg="white" if phase == "PLAYING" else "orange" if phase == "WARNING" else "red" if phase == "ENDED" else "white"
         )
+    
+    
+    def eventLogUpdated(self, snapshot):
+        """
+        Only the new log lines are added here.
+        """
+        event_log = snapshot["event_log"]
+    
+        # When the controller log is reset, the visible log is reset too
+        if len(event_log) < self._last_log_index:
+            self.logWidgetCleared()
+            self._last_log_index = 0
+    
+        new_entries = event_log[self._last_log_index:]
+    
+        for entry in new_entries:
+            self._log(entry)
+    
+        self._last_log_index = len(event_log)
+    
+    
+    def actionScreenUpdate(self):
+        controller.updateTimer()
+        snapshot = controller.getActionSnapshot()
+    
+        self.phaseAndTimerUpdate(snapshot)
+        self._populate_rosters(snapshot)
+        self.eventLogUpdated(snapshot)
+    
+        self._refresh_job = self.after(250, self.actionScreenUpdate) 
 
-        # Sync time to controller state
-        controller.grabState().time_remaining = self._time_remaining
-
-        self._time_remaining -= 1
-        self._timer_job = self.after(1000, self._tick_game_clock)
-
-    def _stop_timer(self):
-        """Cancel any running timer job safely."""
-        if self._timer_job is not None:
-            self.after_cancel(self._timer_job)
-            self._timer_job = None
+    def stopUpdateLoop(self):
+        if self._refresh_job is not None:
+            self.after_cancel(self._refresh_job)
+            self._refresh_job = None
 
     # ------------------------------------------------------------------
     # Key handlers
     # ------------------------------------------------------------------
 
     def on_f1(self):
-        """F1: stop timer and return to entry screen."""
-        self._stop_timer()
+        """F1. This will stop the update loop and go back to the entry screen."""
+        self.stopUpdateLoop()
         if self.on_return_entry:
             self.on_return_entry()
-
+    
     def on_f12(self):
-        """F12 on action screen: stop timer, let clearItAll handle state."""
-        self._stop_timer()
+        """F12 on action screen. This will  stop the update loop and clear the controller state."""
+        self.stopUpdateLoop()
         controller.clearItAll()
+        if self.on_return_entry:
+            self.on_return_entry()
 
 
 # =============================================================================
@@ -830,16 +810,16 @@ def startApp():
             controller.clearItAll()
 
     def f5Start(event):
-        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "on_f5"):
-            presentScreen["screen"].on_f5()
+        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "startf5"):
+            presentScreen["screen"].startf5()
 
     def f1Entry(event):
         if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "on_f1"):
             presentScreen["screen"].on_f1()
 
     def f3Start(event):
-        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "on_f5"):
-            presentScreen["screen"].on_f5()
+        if presentScreen["screen"] is not None and hasattr(presentScreen["screen"], "startf5"):
+            presentScreen["screen"].startf5()
 
     root.bind("<F1>", f1Entry)
     root.bind("<F3>", f3Start)
