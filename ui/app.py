@@ -37,7 +37,6 @@ teamRows = 15         # number of roster rows (0-14)
 # Game timing constants
 GAME_SECONDS      = 360   # 6 minutes full game clock
 WARNING_SECONDS   = 30    # 30-second warning threshold
-START_COUNTDOWN   = 5     # 5-second start countdown sequence
 
 
 # =============================================================================
@@ -511,7 +510,7 @@ class ActionScreen(tk.Frame):
 
         self.timerLabel = tk.Label(
             topBar,
-            text=self._fmt_start(START_COUNTDOWN),
+            text=controller.formatTimeRemaining(),
             fg="white",
             bg="black",
             font=("Arial", 48, "bold")
