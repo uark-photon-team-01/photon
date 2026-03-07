@@ -106,6 +106,8 @@ You should see one listener line for this run in Terminal A.
 
 -----
 
+
+
 **Add a Player then verify the broadcast**
 
 In the game, add a player for the red team, afterwards you should see a broadcast line in Terminal A.
@@ -129,6 +131,37 @@ In the game, change the Network IP to 127.0.0.2, then click Set Network IP. Now 
 Terminal A should show: IP change line & a broadcast line now using 127.0.0.2:7500
 
 Great job! Now you know that the network code works properly.
+
+
+**Run our new network edge-case tests**
+
+Now let's prove the network actually handles real hits and ignores bad data.
+Make sure the game is running in Terminal A, you've added at least two players (like ID 1 and ID 2), and you've pressed F5 to start the game. Wait until the 30-second warning finishes and the game says "Game On!".
+
+In Terminal B, try sending these commands one by one:
+
+**Test a Valid Player Tag**
+- echo -n "1:2" | nc -u -w1 127.0.0.1 7501
+Terminal A / App: Look at the game log. Player 1 should tag Player 2, and Player 1 gets 10 points.
+
+**Test a Valid Base Hit**
+- echo -n "1:53" | nc -u -w1 127.0.0.1 7501
+Terminal A / App: Player 1 triggers base 53, and their team gets 100 points.
+
+**Test Invalid Data (Garbage Text)**
+- echo -n "hello" | nc -u -w1 127.0.0.1 7501
+Terminal A: The game shouldn't crash! It should just print "Warning: Invalid UDP packet ignored -> hello".
+
+**Test Invalid Data (Missing Separator)**
+- echo -n "9999" | nc -u -w1 127.0.0.1 7501
+Terminal A: It should safely print "Warning: Invalid UDP packet ignored -> 9999".
+
+-----
+
+**Verify Scheduled Game Broadcasts (202 and 221)**
+
+- Game Start (202): When that 30-second warning countdown finishes, check Terminal A. You should see a line saying: UDP Broadcast sent: 202 to 127.0.0.1:7500.
+- Game End (221): Let the 6-minute game clock completely run out. Once it hits zero, Terminal A should print UDP Broadcast sent: 221 to 127.0.0.1:7500 exactly three times.
 
 
 #
