@@ -1,6 +1,6 @@
 """
 The Sprint 2 requirements for this file are the following:
-- Splash screen for at about 3 seconds (the logo is in provided in Jim's repo)
+- Splash screen for at about 3 seconds (the logo is provided in Jim's repo)
 - Then switch to Player Entry screen
 - F12 clears all entries (it will call the controller)
 - F5 starts game (switch to action screen later)
@@ -13,30 +13,38 @@ Sprint 3 additions:
 - Red and green team scoreboards populated from entry screen roster
 - Play-by-play event log panel
 
-Jim's starter material will be used here.
-- In Jim's repo there are assets & screen references:
-  - assets/logo.jpg (splash logo)
-  - entry_terminal_screen.jpg (entry screen reference)
-  - game_action.jpg (action screen reference)
-  - baseicon.jpg (use this later)
-  - photon_tracks/ (later we will add music)
-
-Tips!
-- Build the actual Player Entry screen layout using the screenshots in Jim's repo/class slides.
-- Wire buttons/inputs to the controller functions (Do not call the DB/UDP directly).
+Sprint 3 finishing work:
+- Base icon when has_baseIcon / hasbaseIcon is true
+- Flashing winning team total
+- Visible Return button after game ends
+- Live ActionScreen from controller snapshot
+- Optional random MP3 playback (fails gracefully if pygame is unavailable)
 """
 
 import os
+import glob
+import random
 import tkinter as tk
 from tkinter import ttk
 import controller
 
-MS_SplashTime = 3000  # 3 seconds
-teamRows = 15         # number of roster rows (0-14)
+try:
+    import pygame
+    PYGAME_OK = True
+except Exception:
+    PYGAME_OK = False
 
-# Game timing constants
-GAME_SECONDS      = 360   # 6 minutes full game clock
-WARNING_SECONDS   = 30    # 30-second warning threshold
+try:
+    from PIL import Image, ImageTk
+    PIL_OK = True
+except Exception:
+    PIL_OK = False
+
+MS_SplashTime = 3000
+teamRows = 15
+
+GAME_SECONDS = 360
+WARNING_SECONDS = 30
 
 
 # =============================================================================
@@ -48,24 +56,13 @@ class EntryScreen(tk.Frame):
         super().__init__(parent, bg="black")
         self.startGame = startGame
 
-        # Store local roster data for display
         self.redRoster = []
         self.greenRoster = []
-
-        # Keep track of which Player IDs have been used in this specific game
         self.notNewPlayerID = set()
 
         self.playerInDB = False
         self.codenameForDB = None
-        # NOTE: codenameChanged is intentionally removed.
-        # Per the database rules, existing players are always used as-is.
-        # The codename field is read-only when a player is found in the DB.
-        # -------------------------------------------------------------------
-        # Input validation + entry/reset helpers are defined below __init__.
-        # See: _validatePlayerID(), _validateEquipmentID(), _clearEntryFields()
-        # -------------------------------------------------------------------
 
-        # Top Title Area
         titleFrame = tk.Frame(self, bg="black")
         titleFrame.pack(fill="x", pady=(10, 0))
 
@@ -85,7 +82,6 @@ class EntryScreen(tk.Frame):
             font=("Times New Roman", 18, "bold")
         ).pack(pady=(3, 10))
 
-        # Middle Teams Area
         teamsFrame = tk.Frame(self, bg="black")
         teamsFrame.pack(pady=5)
 
@@ -105,7 +101,6 @@ class EntryScreen(tk.Frame):
         self.redRos["frame"].grid(row=0, column=0, padx=20)
         self.greenRos["frame"].grid(row=0, column=1, padx=20)
 
-        # Entry Controls Area
         controlsArea = tk.Frame(self, bg="black")
         controlsArea.pack(fill="x", pady=(10, 5))
 
@@ -136,7 +131,6 @@ class EntryScreen(tk.Frame):
         ).grid(row=0, column=4, padx=6, pady=4, sticky="e")
         self.entryForCodename = ttk.Entry(controlsArea, width=18)
         self.entryForCodename.grid(row=0, column=5, padx=6, pady=4, sticky="w")
-        # NOTE: No KeyRelease binding. Existing players use their DB codename as-is.
 
         tk.Label(
             controlsArea, text="Equipment ID:", fg="white", bg="black", font=("Arial", 10, "bold")
@@ -156,7 +150,6 @@ class EntryScreen(tk.Frame):
             font=("Arial", 10)
         ).grid(row=1, column=0, columnspan=10, padx=6, pady=(2, 0), sticky="w")
 
-        # Bottom Button Bar
         buttons_frame = tk.Frame(self, bg="black")
         buttons_frame.pack(fill="x", pady=(10, 0))
 
@@ -167,7 +160,7 @@ class EntryScreen(tk.Frame):
 
         tk.Label(
             self,
-            text="<F12> to Clear Game <F5> to Start Game",
+            text="<F12> to Clear Game    <F5> to Start Game",
             fg="white",
             bg="black",
             font=("Arial", 10)
@@ -175,18 +168,7 @@ class EntryScreen(tk.Frame):
 
         self.after_idle(self.refreshTables)
 
-    # ------------------------------------------------------------------
-    # Input validation helpers
-    # ------------------------------------------------------------------
-
     def _validatePlayerID(self, raw):
-        """
-        Validate the Player ID field.
-
-        Returns:
-            tuple: (int, None)  if valid
-                   (None, str)  if invalid — None and an error message
-        """
         raw = raw.strip()
         if not raw:
             return None, "Player ID cannot be empty."
@@ -199,13 +181,6 @@ class EntryScreen(tk.Frame):
         return value, None
 
     def _validateEquipmentID(self, raw):
-        """
-        Validate the Equipment ID field.
-
-        Returns:
-            tuple: (int, None)  if valid
-                   (None, str)  if invalid — None and an error message
-        """
         raw = raw.strip()
         if not raw:
             return None, "Equipment ID cannot be empty."
@@ -217,16 +192,7 @@ class EntryScreen(tk.Frame):
             return None, "Equipment ID must be a positive number."
         return value, None
 
-    # ------------------------------------------------------------------
-    # Entry / reset helpers
-    # ------------------------------------------------------------------
-
     def _clearEntryFields(self):
-        """
-        Full reset of all entry fields and all player lookup state flags.
-        Call this after a successful Add Player, after F12, and whenever
-        the entry area needs to go back to a clean blank state.
-        """
         self.playerInDB = False
         self.codenameForDB = None
         self.entryPlayerID.delete(0, "end")
@@ -236,18 +202,12 @@ class EntryScreen(tk.Frame):
         self.statusVariable.set("")
 
     def _resetCodenameField(self):
-        """
-        Partial reset — clears only the codename field and lookup flags.
-        Use inside on_playerID_changed when a lookup fails or errors,
-        without touching Player ID or Equipment ID.
-        """
         self.playerInDB = False
         self.codenameForDB = None
         self.entryForCodename.configure(state="normal")
         self.entryForCodename.delete(0, "end")
 
     def makeTeamRos(self, parent, teamName, header_bg, outline):
-        """Build a table-like panel with 15 rows."""
         panel = tk.Frame(parent, bg="black")
 
         tk.Label(
@@ -291,10 +251,6 @@ class EntryScreen(tk.Frame):
         )
 
     def on_playerID_changed(self, event=None):
-        """
-        Called when the player ID field loses focus or Enter is pressed.
-        Validates, checks for duplicates, then looks up in the database.
-        """
         raw = self.entryPlayerID.get().strip()
 
         if raw == "":
@@ -311,23 +267,26 @@ class EntryScreen(tk.Frame):
         if playerID in self.notNewPlayerID:
             self._resetCodenameField()
             self.statusVariable.set(
-                f"Player ID {playerID} is already in this game session. "
-                "Use F12 to clear and start over."
+                f"Player ID {playerID} is already in this game session. Use F12 to clear and start over."
             )
             return
 
-        status, codename = controller.dbGetCodename(playerID)
+        try:
+            status, codename = controller.dbGetCodename(playerID)
+        except Exception:
+            self._resetCodenameField()
+            self.statusVariable.set("Database error! Check PostgreSQL connection.")
+            return
 
         if status == "found":
             self.playerInDB = True
             self.codenameForDB = codename
             self.entryForCodename.configure(state="normal")
             self.entryForCodename.delete(0, "end")
-            self.entryForCodename.configure(state="normal")
             self.entryForCodename.insert(0, codename)
             self.entryForCodename.configure(state="readonly")
             self.statusVariable.set(
-                f"Player {playerID} found: '{codename}'. Codename will be used as-is."
+                f"YAY! Player found in DB, using codename {codename}"
             )
 
         elif status == "not_found":
@@ -335,7 +294,7 @@ class EntryScreen(tk.Frame):
             self.codenameForDB = None
             self.entryForCodename.configure(state="normal")
             self.entryForCodename.delete(0, "end")
-            self.statusVariable.set("New player — enter a codename to add to the database.")
+            self.statusVariable.set("Uh oh! Player not found, enter codename to add new player.")
             self.entryForCodename.focus_set()
 
         elif status == "db_error":
@@ -347,12 +306,6 @@ class EntryScreen(tk.Frame):
             self.statusVariable.set(f"Unknown database status: {status}")
 
     def addPlayerOn(self):
-        """
-        Unified Add Player button. Two scenarios only:
-        1. Player EXISTS in DB → use codename as-is, no DB update.
-        2. Player NOT in DB    → insert new player.
-        Duplicate Player IDs within the same game session are blocked.
-        """
         team = self.teamVariable.get().strip().upper()
 
         playerID, error = self._validatePlayerID(self.entryPlayerID.get())
@@ -367,8 +320,7 @@ class EntryScreen(tk.Frame):
 
         if playerID in self.notNewPlayerID:
             self.statusVariable.set(
-                f"Player ID {playerID} is already in this game session. "
-                "Clear the game (F12) to start over."
+                f"Player ID {playerID} is already in this game session. Clear the game (F12) to start over."
             )
             return
 
@@ -387,13 +339,17 @@ class EntryScreen(tk.Frame):
                 f"Using existing codename '{codenameOfUse}' for Player {playerID}."
             )
         else:
-            status = controller.dbInsertPlayer(playerID, codenameOfUse)
+            try:
+                status = controller.dbInsertPlayer(playerID, codenameOfUse)
+            except Exception:
+                self.statusVariable.set("Database error — player was not saved.")
+                return
+
             if status == "success":
                 self.statusVariable.set(f"New player '{codenameOfUse}' added to database.")
             elif status == "duplicate":
                 self.statusVariable.set(
-                    f"Player {playerID} already exists in the database. "
-                    "Re-enter the Player ID to load their codename."
+                    f"Player {playerID} already exists in the database. Re-enter the Player ID to load their codename."
                 )
                 self._resetCodenameField()
                 return
@@ -417,7 +373,6 @@ class EntryScreen(tk.Frame):
         self.statusVariable.set("Already on Entry screen.")
 
     def on_f12(self):
-        """F12: clear controller state and reset the UI."""
         controller.clearItAll()
         self.redRoster.clear()
         self.greenRoster.clear()
@@ -427,20 +382,18 @@ class EntryScreen(tk.Frame):
         self.statusVariable.set("Cleared all entries.")
 
     def startf5(self):
-      """This is F5. Here, the controller game flow begins, and then goes to the action screen."""
-      try:
-          controller.startGame()
-      except Exception as e:
-          self.statusVariable.set(f"Unfortunately, the game could not be started. Here's why:  {e}")
-          return
-  
-      if self.startGame:
-          self.startGame()
-      else:
-          self.statusVariable.set("The Game has begun!")
+        try:
+            controller.startGame()
+        except Exception as e:
+            self.statusVariable.set(f"Unfortunately, the game could not be started. Here's why: {e}")
+            return
+
+        if self.startGame:
+            self.startGame()
+        else:
+            self.statusVariable.set("The Game has begun!")
 
     def refreshTables(self):
-        """Paint roster data into the 15-row tables."""
         self._paint_roster(self.redRos["rows"], self.redRoster)
         self._paint_roster(self.greenRos["rows"], self.greenRoster)
 
@@ -464,38 +417,92 @@ class EntryScreen(tk.Frame):
 # =============================================================================
 
 class ActionScreen(tk.Frame):
-    """
-    Real game action screen. Sections:
-      - Countdown timer at the top
-      - Red team total  |  Green team total
-      - Red scoreboard  |  Green scoreboard
-      - Play-by-play event log at the bottom
-
-    Timer flow:
-      1. Start countdown  : 5 → 4 → 3 → 2 → 1 → GO!
-      2. 30-second warning: shown when time_remaining hits WARNING_SECONDS
-      3. Full game clock  : counts down from GAME_SECONDS (6 minutes)
-    """
-
     def __init__(self, parent, on_return_entry=None):
         super().__init__(parent, bg="black")
         self.on_return_entry = on_return_entry
 
-        # UI refresh state
         self._refresh_job = None
         self._last_log_index = 0
-        
+        self._flash_on = False
+        self._music_started = False
+        self._music_file = None
+        self._return_button_visible = False
+
+        self.baseIconImage = None
+        self.baseIconTextFallback = " [BASE]"
+
+        self._load_base_icon()
         self._build_layout()
+        self._setup_music()
         self.actionScreenUpdate()
 
     # ------------------------------------------------------------------
-    # Layout builder
+    # Assets / music
+    # ------------------------------------------------------------------
+
+    def _load_base_icon(self):
+        assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
+        jpg_path = os.path.normpath(os.path.join(assets_dir, "baseicon.jpg"))
+        png_path = os.path.normpath(os.path.join(assets_dir, "baseicon.png"))
+
+        if PIL_OK:
+            for path in (png_path, jpg_path):
+                if os.path.exists(path):
+                    try:
+                        img = Image.open(path)
+                        img = img.resize((16, 16))
+                        self.baseIconImage = ImageTk.PhotoImage(img)
+                        return
+                    except Exception:
+                        pass
+
+    def _setup_music(self):
+        self.trackFiles = []
+        tracks_dir = os.path.join(os.path.dirname(__file__), "..", "assets", "photon_tracks")
+        tracks_dir = os.path.normpath(tracks_dir)
+
+        if os.path.isdir(tracks_dir):
+            self.trackFiles = glob.glob(os.path.join(tracks_dir, "*.mp3"))
+
+        if PYGAME_OK:
+            try:
+                if not pygame.mixer.get_init():
+                    pygame.mixer.init()
+            except Exception:
+                pass
+
+    def _start_music_if_needed(self, phase):
+        if phase not in ("WARNING", "PLAYING"):
+            return
+
+        if self._music_started:
+            return
+
+        if not PYGAME_OK or not self.trackFiles:
+            return
+
+        try:
+            self._music_file = random.choice(self.trackFiles)
+            pygame.mixer.music.load(self._music_file)
+            pygame.mixer.music.play()
+            self._music_started = True
+        except Exception:
+            self._music_started = False
+
+    def _stop_music(self):
+        if PYGAME_OK:
+            try:
+                pygame.mixer.music.stop()
+            except Exception:
+                pass
+        self._music_started = False
+        self._music_file = None
+
+    # ------------------------------------------------------------------
+    # Layout
     # ------------------------------------------------------------------
 
     def _build_layout(self):
-        """Build all the visual sections of the action screen."""
-
-        # ── Top bar: timer + phase label ──────────────────────────────
         topBar = tk.Frame(self, bg="black")
         topBar.pack(fill="x", pady=(10, 0))
 
@@ -510,14 +517,13 @@ class ActionScreen(tk.Frame):
 
         self.timerLabel = tk.Label(
             topBar,
-            text=controller.formatTimeRemaining(),
+            text="06:00",
             fg="white",
             bg="black",
             font=("Arial", 48, "bold")
         )
         self.timerLabel.pack(pady=(0, 6))
 
-        # ── Team totals row ───────────────────────────────────────────
         totalsBar = tk.Frame(self, bg="black")
         totalsBar.pack(fill="x", pady=(4, 0))
 
@@ -546,11 +552,9 @@ class ActionScreen(tk.Frame):
         totalsBar.columnconfigure(0, weight=1)
         totalsBar.columnconfigure(1, weight=1)
 
-        # ── Scoreboards + event log ───────────────────────────────────
         middleArea = tk.Frame(self, bg="black")
         middleArea.pack(fill="both", expand=True, pady=(10, 0))
 
-        # Red scoreboard
         redPane = tk.Frame(middleArea, bg="black")
         redPane.grid(row=0, column=0, padx=14, sticky="nsew")
 
@@ -563,7 +567,6 @@ class ActionScreen(tk.Frame):
         self.redScoreFrame = tk.Frame(redPane, bg="black")
         self.redScoreFrame.pack(fill="both", expand=True)
 
-        # Green scoreboard
         greenPane = tk.Frame(middleArea, bg="black")
         greenPane.grid(row=0, column=1, padx=14, sticky="nsew")
 
@@ -576,7 +579,6 @@ class ActionScreen(tk.Frame):
         self.greenScoreFrame = tk.Frame(greenPane, bg="black")
         self.greenScoreFrame.pack(fill="both", expand=True)
 
-        # Event log
         logPane = tk.Frame(middleArea, bg="black")
         logPane.grid(row=0, column=2, padx=14, sticky="nsew")
 
@@ -604,7 +606,6 @@ class ActionScreen(tk.Frame):
         middleArea.columnconfigure(1, weight=1)
         middleArea.columnconfigure(2, weight=2)
 
-        # ── Bottom bar ────────────────────────────────────────────────
         bottomBar = tk.Frame(self, bg="black")
         bottomBar.pack(fill="x", pady=(8, 6))
 
@@ -614,23 +615,104 @@ class ActionScreen(tk.Frame):
             fg="white", bg="black", font=("Arial", 10)
         ).pack()
 
+        self.returnButton = ttk.Button(
+            bottomBar,
+            text="Return to Entry",
+            command=self.on_f1
+        )
+        # shown only when phase == ENDED
+
     # ------------------------------------------------------------------
-    # Roster population
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _format_time(self, value):
+        try:
+            total = int(value)
+        except Exception:
+            try:
+                return controller.formatTimeRemaining()
+            except Exception:
+                return "00:00"
+
+        if total < 0:
+            total = 0
+        minutes = total // 60
+        seconds = total % 60
+        return f"{minutes:02d}:{seconds:02d}"
+
+    def _player_has_base_icon(self, player):
+        return bool(
+            getattr(player, "has_baseIcon", False) or
+            getattr(player, "hasbaseIcon", False)
+        )
+
+    def _sorted_roster(self, roster):
+        return sorted(
+            roster,
+            key=lambda p: (
+                -int(getattr(p, "score", 0)),
+                str(getattr(p, "codename", "")).lower(),
+                int(getattr(p, "playerID", 0) or getattr(p, "player_id", 0) or 0)
+            )
+        )
+
+    def _show_return_button_if_needed(self, phase):
+        should_show = (phase == "ENDED")
+        if should_show and not self._return_button_visible:
+            self.returnButton.pack(pady=6)
+            self._return_button_visible = True
+        elif not should_show and self._return_button_visible:
+            self.returnButton.pack_forget()
+            self._return_button_visible = False
+
+    def _apply_flashing_totals(self, red_total, green_total):
+        self._flash_on = not self._flash_on
+
+        red_normal = "#ff4444"
+        green_normal = "#44ff44"
+        flash_color = "white"
+
+        if red_total > green_total:
+            self.redTotalLabel.configure(fg=flash_color if self._flash_on else red_normal)
+            self.greenTotalLabel.configure(fg=green_normal)
+        elif green_total > red_total:
+            self.greenTotalLabel.configure(fg=flash_color if self._flash_on else green_normal)
+            self.redTotalLabel.configure(fg=red_normal)
+        else:
+            self.redTotalLabel.configure(fg=red_normal)
+            self.greenTotalLabel.configure(fg=green_normal)
+
+    def _log(self, message):
+        self.eventLog.configure(state="normal")
+        self.eventLog.insert("end", message + "\n")
+        self.eventLog.see("end")
+        self.eventLog.configure(state="disabled")
+
+    def logWidgetCleared(self):
+        self.eventLog.configure(state="normal")
+        self.eventLog.delete("1.0", "end")
+        self.eventLog.configure(state="disabled")
+
+    # ------------------------------------------------------------------
+    # Live snapshot updates
     # ------------------------------------------------------------------
 
     def _populate_rosters(self, snapshot):
-        """
-        Use the controller snapshot to build the scoreboards and totals.
-        """
-        self._build_scoreboard(self.redScoreFrame, snapshot["red_roster"], "#ff4444")
-        self._build_scoreboard(self.greenScoreFrame, snapshot["green_roster"], "#44ff44")
-    
-        self.redTotalLabel.configure(text=str(snapshot["red_total_score"]))
-        self.greenTotalLabel.configure(text=str(snapshot["green_total_score"]))
+        red_roster = self._sorted_roster(snapshot.get("red_roster", []))
+        green_roster = self._sorted_roster(snapshot.get("green_roster", []))
 
-      
+        self._build_scoreboard(self.redScoreFrame, red_roster, "#ff4444")
+        self._build_scoreboard(self.greenScoreFrame, green_roster, "#44ff44")
+
+        red_total = int(snapshot.get("red_total_score", 0))
+        green_total = int(snapshot.get("green_total_score", 0))
+
+        self.redTotalLabel.configure(text=str(red_total))
+        self.greenTotalLabel.configure(text=str(green_total))
+        self._apply_flashing_totals(red_total, green_total)
+
     def _build_scoreboard(self, frame, team, color):
-        """Build one row per player in the given frame."""
         for widget in frame.winfo_children():
             widget.destroy()
 
@@ -645,49 +727,50 @@ class ActionScreen(tk.Frame):
             row = tk.Frame(frame, bg="black")
             row.pack(fill="x", padx=4, pady=1)
 
+            left = tk.Frame(row, bg="black")
+            left.pack(side="left", fill="x", expand=True)
+
+            codename = str(getattr(player, "codename", "UNKNOWN"))
+
             tk.Label(
-                row, text=player.codename,
-                fg=color, bg="black",
-                font=("Arial", 10, "bold"), width=18, anchor="w"
+                left,
+                text=codename,
+                fg=color,
+                bg="black",
+                font=("Arial", 10, "bold"),
+                anchor="w"
             ).pack(side="left")
 
-            score = getattr(player, "score", 0)
+            if self._player_has_base_icon(player):
+                if self.baseIconImage is not None:
+                    tk.Label(
+                        left,
+                        image=self.baseIconImage,
+                        bg="black"
+                    ).pack(side="left", padx=(4, 0))
+                else:
+                    tk.Label(
+                        left,
+                        text=self.baseIconTextFallback,
+                        fg="white",
+                        bg="black",
+                        font=("Arial", 9, "bold")
+                    ).pack(side="left", padx=(4, 0))
+
+            score = int(getattr(player, "score", 0))
             tk.Label(
-                row, text=str(score),
-                fg="white", bg="black",
-                font=("Arial", 10), width=6, anchor="e"
+                row,
+                text=str(score),
+                fg="white",
+                bg="black",
+                font=("Arial", 10),
+                width=6,
+                anchor="e"
             ).pack(side="right")
 
-    def _team_total(self, team):
-        """Sum all player scores for a team."""
-        return sum(getattr(p, "score", 0) for p in team)
-
-    def _log(self, message):
-        """Append a line to the event log text widget."""
-        self.eventLog.configure(state="normal")
-        self.eventLog.insert("end", message + "\n")
-        self.eventLog.see("end")
-        self.eventLog.configure(state="disabled")
-
-  
-
-    # ------------------------------------------------------------------
-    # Timer logic
-    # ------------------------------------------------------------------
-
-    def logWidgetCleared(self):
-        """The visible event log panel is cleared."""
-        self.eventLog.configure(state="normal")
-        self.eventLog.delete("1.0", "end")
-        self.eventLog.configure(state="disabled")
-    
-
     def phaseAndTimerUpdate(self, snapshot):
-        """
-        The timer and phase labels from the controller state are updated.
-        """
-        phase = str(snapshot["phase"]).upper()
-    
+        phase = str(snapshot.get("phase", "")).upper()
+
         if phase == "WARNING":
             self.phaseLabel.configure(text="30 Second Warning!", fg="orange")
         elif phase == "PLAYING":
@@ -695,42 +778,45 @@ class ActionScreen(tk.Frame):
         elif phase == "ENDED":
             self.phaseLabel.configure(text="Game Over!", fg="red")
         else:
-            self.phaseLabel.configure(text=phase, fg="yellow")
-    
+            self.phaseLabel.configure(text=phase or "GET READY", fg="yellow")
+
         self.timerLabel.configure(
-            text=controller.formatTimeRemaining(),
-            fg="white" if phase == "PLAYING" else "orange" if phase == "WARNING" else "red" if phase == "ENDED" else "white"
+            text=self._format_time(snapshot.get("time_remaining", 0)),
+            fg="white" if phase == "PLAYING"
+               else "orange" if phase == "WARNING"
+               else "red" if phase == "ENDED"
+               else "white"
         )
-    
-    
+
+        self._show_return_button_if_needed(phase)
+
+        if phase == "ENDED":
+            self._stop_music()
+        else:
+            self._start_music_if_needed(phase)
+
     def eventLogUpdated(self, snapshot):
-        """
-        Only the new log lines are added here.
-        """
-        event_log = snapshot["event_log"]
-    
-        # When the controller log is reset, the visible log is reset too
+        event_log = snapshot.get("event_log", [])
+
         if len(event_log) < self._last_log_index:
             self.logWidgetCleared()
             self._last_log_index = 0
-    
+
         new_entries = event_log[self._last_log_index:]
-    
         for entry in new_entries:
-            self._log(entry)
-    
+            self._log(str(entry))
+
         self._last_log_index = len(event_log)
-    
-    
+
     def actionScreenUpdate(self):
         controller.updateTimer()
         snapshot = controller.getActionSnapshot()
-    
+
         self.phaseAndTimerUpdate(snapshot)
         self._populate_rosters(snapshot)
         self.eventLogUpdated(snapshot)
-    
-        self._refresh_job = self.after(250, self.actionScreenUpdate) 
+
+        self._refresh_job = self.after(250, self.actionScreenUpdate)
 
     def stopUpdateLoop(self):
         if self._refresh_job is not None:
@@ -738,19 +824,20 @@ class ActionScreen(tk.Frame):
             self._refresh_job = None
 
     # ------------------------------------------------------------------
-    # Key handlers
+    # Key / button handlers
     # ------------------------------------------------------------------
 
     def on_f1(self):
-        """F1. This will stop the update loop and go back to the entry screen."""
         self.stopUpdateLoop()
+        self._stop_music()
         if self.on_return_entry:
             self.on_return_entry()
-    
+
     def on_f12(self):
-        """F12 on action screen. This will  stop the update loop and clear the controller state."""
         self.stopUpdateLoop()
+        self._stop_music()
         controller.clearItAll()
+        self._last_log_index = 0
         if self.on_return_entry:
             self.on_return_entry()
 
@@ -796,8 +883,13 @@ def startApp():
     def show_screen(new_screen):
         old = presentScreen["screen"]
         if old is not None:
+            if hasattr(old, "stopUpdateLoop"):
+                old.stopUpdateLoop()
+            if hasattr(old, "_stop_music"):
+                old._stop_music()
             old.pack_forget()
             old.destroy()
+
         presentScreen["screen"] = new_screen
         new_screen.pack(in_=content, fill="both", expand=True)
         root.update_idletasks()
@@ -826,7 +918,6 @@ def startApp():
     root.bind("<F12>", f12Clear)
     root.bind("<F5>", f5Start)
 
-    # Splash screen
     splashFrame = tk.Frame(content, bg="black")
     splashFrame.pack(fill="both", expand=True)
 
