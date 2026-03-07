@@ -422,11 +422,10 @@ def validateEvent(event):
 
     return True
 
-def handleIncomingUDPMessage(rawMessage):
+def handleIncomingUDPMessage(parsedEvent): # Now receives the dictionary directly
     """
+    Receives the parsed event dictionary straight from udp.py
     """
-    parsedEvent = parseUDPMessage(rawMessage)
-
     if not validateEvent(parsedEvent):
         return False
 

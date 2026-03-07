@@ -30,6 +30,32 @@ import socket
 import threading
 import time
 
+def parse_packet(raw_text):
+    """Converts a raw UDP string into an event dictionary."""
+    text = str(raw_text).strip()
+    
+    # Check for empty string or missing colon
+    if not text or ":" not in text:
+        return None
+        
+    parts = text.split(":")
+    if len(parts) != 2:
+        return None
+        
+    # Make sure both parts are actual numbers
+    try:
+        transmitter = int(parts[0].strip())
+        hit = int(parts[1].strip())
+    except ValueError:
+        return None
+        
+    # Check if it's a base code (43 for red, 53 for green)
+    if hit in (43, 53):
+        return {"type": "BASE", "transmitter": transmitter, "hit": hit}
+        
+    # Otherwise, it's a normal player tag
+    return {"type": "TAG", "transmitter": transmitter, "hit": hit}
+
 #The Required Ports
 broadcastPort = 7500
 receivePort = 7501
@@ -90,9 +116,12 @@ def netBeginUDP_Listener(newMessage=None):
         rxSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         # The following will allow the binding to any IP
-        rxSocket.bind(("0.0.0.0", receivePort))
-
-        print("The UDP listener is running on 0.0.0.0:" + str(receivePort))
+        try:
+            rxSocket.bind(("0.0.0.0", receivePort))
+            print("The UDP listener is running on 0.0.0.0:" + str(receivePort))
+        except OSError as e:
+            print(f"Warning: Could not bind to port {receivePort}. Is the listener already running? Error: {e}")
+            return  # This stops the thread from crashing the whole app
 
         while True:
             data, addr = rxSocket.recvfrom(bufferSize)
@@ -101,9 +130,16 @@ def netBeginUDP_Listener(newMessage=None):
             # Here, the receieved data is printed 
             print("UDP received:", raw, "from", addr)
 
+            # Parse the raw data
+            parsed_event = parse_packet(raw)
+            
+            if parsed_event is None:
+                print(f"Warning: Invalid UDP packet ignored -> {raw}")
+                continue # Skip the rest of the loop, don't send to controller
+
             # With this the Controller can optionally handle it
             if newMessage is not None:
-                newMessage(raw)
+                newMessage(parsed_event) # Send the DICTIONARY, not the raw string!
 
     # With this thread the UI should not feeeze
     # target=listenLoop means “Run listenLoop() in a background thread”
