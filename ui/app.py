@@ -830,6 +830,8 @@ class ActionScreen(tk.Frame):
     def on_f1(self):
         self.stopUpdateLoop()
         self._stop_music()
+        controller.clearItAll()
+        self._last_log_index = 0
         if self.on_return_entry:
             self.on_return_entry()
 
