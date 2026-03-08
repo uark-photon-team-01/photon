@@ -299,23 +299,6 @@ def applyEvent(event):
     recordLog(f"An Invalid event was received. There was an unknown event type '{eventType}'.")
     return False
 
-# def buildEventFromTransmitHit(transmitterID, hitID):
-#     """
-#     The raw transmitter:hit values are converted into the event shapes used by applyEvent().
-#     Caleb's receiver can call this later.
-#     """
-#     if hitID in (43, 53):
-#         return {
-#             "type": "BASE",
-#             "transmitter": transmitterID,
-#             "hit": hitID
-#         }
-
-#     return {
-#         "type": "TAG",
-#         "transmitter": transmitterID,
-#         "hit": hitID
-#     }
 
 def isBaseCode(hitID):
     """
@@ -323,58 +306,6 @@ def isBaseCode(hitID):
     """
     return hitID in (43, 53)
 
-# def parseUDPMessage(rawMessage):
-#     """
-#     Here, raw UDP strings are converted into a parsed event dictionary.
-#     if the input is valid, a dictionary is returned.
-#     if the input is invalid, nothing is returned
-#     """
-#     if rawMessage is None:
-#         recordLog("There was an invalid UDP input error: the message was None.")
-#         return None
-
-#     text = str(rawMessage).strip()
-
-#     if text == "":
-#         recordLog("There was an invalid UDP input error: the message is empty.")
-#         return None
-
-#     if ":" not in text:
-#         recordLog(f"There was an invalid UDP input error: there is a missing ':' separator in the following: {text}")
-#         return None
-
-#     parts = text.split(":")
-
-#     if len(parts) != 2:
-#         recordLog(f"There was an invalid UDP input error: There was an expected transmitter and hit format in {text}")
-#         return None
-
-#     transmitterText = parts[0].strip()
-#     hitText = parts[1].strip()
-
-#     if transmitterText == "" or hitText == "":
-#         recordLog(f"There was an invalid UDP input error: there is a missing transmitter or hit value in {text}")
-#         return None
-
-#     try:
-#         transmitterID = int(transmitterText)
-#         hitID = int(hitText)
-#     except ValueError:
-#         recordLog(f"There was an invalid UDP input error: the transmitter and hit has to be integers in {text}")
-#         return None
-
-#     if isBaseCode(hitID):
-#         return {
-#             "type": "BASE",
-#             "transmitter": transmitterID,
-#             "hit": hitID
-#         }
-
-#     return {
-#         "type": "TAG",
-#         "transmitter": transmitterID,
-#         "hit": hitID
-#     }
 
 def validateEvent(event):
     """

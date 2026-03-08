@@ -100,15 +100,12 @@ def netBroadcastEquipment(equipmentID):
 
 def netBeginUDP_Listener(newMessage=None):
     """
-    This function should start a UDP receive socket on port 7501.
+    This function starts a UDP receive socket on port 7501.
 
-    The purpose of the newMessage:
-    - This is an optional function passed by controller
-    - we call newMessage(rawText) every time data is recieved. 
-
-    Caleb you need to:
-    - Make sure messages like "transmitterID:hitID" are received -- Caleb: They are recieved
-    - later on, you can parse and convert these into to TAG/BASE events 
+    The purpose of the newMessage callback:
+    - This is an optional function passed by the controller.
+    - We parse the raw UDP text and call newMessage(parsed_event) 
+      every time a valid TAG or BASE event is received.
     """
 
     def listenLoop():
