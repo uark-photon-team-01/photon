@@ -30,12 +30,11 @@ It will ask the password for student type "student" (ignore the air quotes).
 
 **Before you run anything, make sure to pull the latest code (Section B)**
 
-1. cd ~/photon
-2. git checkout main
-3. git fetch origin
-4. git reset --hard origin/main
-5. git clean -fd
-6. git rev-parse --short HEAD
+1. git checkout main
+2. git fetch origin
+3. git reset --hard origin/main
+4. git clean -fd
+5. git rev-parse --short HEAD
 
 -----
 
