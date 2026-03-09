@@ -76,9 +76,8 @@ Commands explained:
 
 Go back to the first Terminal and enter the following:
 
-1. cd ~/photon
-2. pkill -f "python3 main.py" 2>/dev/null || true
-3. python3 main.py
+1. pkill -f "python3 main.py" 2>/dev/null || true
+2. python3 main.py
 
 ----- 
 
