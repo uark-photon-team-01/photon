@@ -225,51 +225,89 @@ def playersAreOnSameTeam(playerOne, playerTwo):
 
 def applyNormalHitScore(tagger, tagged):
     """
-    The normal pvp scoring rules are applied
+    The normal pvp scoring rules are applied.
 
-    Ex: if an opponent is hit:
+    If an opponent is hit:
         tagger +10
+        broadcast tagged player's equipment ID
 
-    if someone is hit on the same-team:
+    If someone is hit on the same-team:
         tagger -10
         tagged -10
+        broadcast tagged player's equipment ID
+        broadcast tagger's own equipment ID too
     """
     if playersAreOnSameTeam(tagger, tagged):
         tagger.score -= 10
         tagged.score -= 10
+
         recordLog(
             f"Uh Oh! There was a same team hit! Player {tagger.codename} hit teammate {tagged.codename}. "
             f"Sadly, both players now lose 10 points."
         )
+
+        # rebroadcast who got hit
+        netBroadcastEquipment(tagged.equipmentID)
+
+        # for same-team hit, also rebroadcast tagger's own equipment ID
+        netBroadcastEquipment(tagger.equipmentID)
+
     else:
         tagger.score += 10
+
         recordLog(
             f"Great! A hit was scored. Player {tagger.codename} tagged {tagged.codename}. "
             f"{tagger.codename} gains 10 points."
         )
 
+        #  rebroadcast who got hit
+        netBroadcastEquipment(tagged.equipmentID)
+
 def applyBaseHitScore(tagger, baseCode):
     """
-    Base scoring will be based on the hit code.
-    Players who trigger the base event are marked with a base icon.
+    Base scoring is based on the hit code as expected.
+
+    53 = red base scored
+         only a green player should be able to score and get the base icon
+
+    43 = green base scored
+         only a red player should be able to score and get the base icon
     """
-    
     if baseCode == 53:
+        if tagger.team != "GREEN":
+            recordLog(
+                f"Here, Base code 53 has been ignored. The following Player {tagger.codename} is on {tagger.team}, "
+                f"however, only a green player can score on the red base."
+            )
+            return False
+
         tagger.score += 100
         tagger.has_baseIcon = True
         recordLog(
-            f"The was a score on a base. Player {tagger.codename} triggered base code 53. "
-            f"Green wins 100 points."
+            f"Yay! The red base was scored! The following Player {tagger.codename} has triggered base code 53. "
+            f"{tagger.codename} gains 100 points and has the base icon now."
         )
+        return True
 
     elif baseCode == 43:
+        if tagger.team != "RED":
+            recordLog(
+                f"Here, Base code 43 has been ignored.  The following Player {tagger.codename} is on {tagger.team}, "
+                f"however, only a red player can score on the green base."
+            )
+            return False
+
         tagger.score += 100
         tagger.has_baseIcon = True
         recordLog(
-            f"The was a score on a base. Player {tagger.codename} triggered base code 43. "
-            f"Red wins 100 points."
+            f"Yay! The green base was scored! The following Player {tagger.codename} has triggered base code 43. "
+            f"{tagger.codename} gains 100 points and has the base icon now."
         )
+        return True
 
+    recordLog(f"The following unsupported base code was received: {baseCode}")
+    return False
+    
 def applyEvent(event):
     """
 
@@ -299,8 +337,7 @@ def applyEvent(event):
             recordLog(f"An Invalid base event was received. There was a unsupported base code {hitID}.")
             return False
 
-        applyBaseHitScore(tagger, hitID)
-        return True
+        return applyBaseHitScore(tagger, hitID)
 
     if eventType == "TAG":
         tagged = findPlayerByEquipmentID(hitID)
