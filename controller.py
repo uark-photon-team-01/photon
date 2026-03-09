@@ -194,6 +194,26 @@ def findPlayerByEquipmentID(equipmentID):
             return player
     return None
 
+MAX_PLAYERS_PER_TEAM = 15
+
+def findPlayerByPlayerID(playerID):
+    """
+    Finds a player by their player ID in both rosters.
+    if nothing is found than the PlayerData object or None is returned
+    """
+    for player in state.redTeam + state.greenTeam:
+        if player.playerID == playerID:
+            return player
+    return None
+
+
+def equipmentIDAlreadyExists(equipmentID):
+    """
+    if this equipment/transmitter ID is already being used it returns true
+    by any player in the present match rosters.
+    """
+    return findPlayerByEquipmentID(equipmentID) is not None
+
 
 def playersAreOnSameTeam(playerOne, playerTwo):
     """
@@ -383,25 +403,48 @@ def addPlayerToTeam(team, playerID, codename, equipmentID):
     Later, this will also trigger the UDP broadcast of equipmentID.
     """
 
-    capitalTeamname = str(team).upper()  # Converts the team names to Uppercase so inputs can be compared easily
+    capitalTeamname = str(team).upper().strip()  # Converts the team names to Uppercase so inputs can be compared easily
+
+     # Make sure IDs are integers
+    try:
+        playerID = int(playerID)
+        equipmentID = int(equipmentID)
+    except (TypeError, ValueError):
+        raise ValueError("Player ID and Equipment ID mhave to be integers.")
+
+    # Validate the team name 
+    if capitalTeamname not in ("RED", "GREEN"):
+         # If the UI passes an incorrect team name, an error is stopped and a message shown
+        raise ValueError("Uh Oh! Your team must be 'RED' or 'GREEN'.")
+
+    # Put player into the correct team roster list
+    if capitalTeamname == "RED":
+        roster = state.redTeam
+    else:
+        roster = state.greenTeam
+
+    # There's Only 15 players per team in the controller too
+    if len(roster) >= MAX_PLAYERS_PER_TEAM:
+        raise ValueError(f"{capitalTeamname} team is already full. There can only be {MAX_PLAYERS_PER_TEAM} players.")
+
+    # Stop duplicate player IDs from occuring in the same game session
+    if findPlayerByPlayerID(playerID) is not None:
+        raise ValueError(f"Sorry! The Player ID {playerID} is already in this game session.")
+
+    # Stop duplicate equipment IDs across both teams
+    if equipmentIDAlreadyExists(equipmentID):
+        raise ValueError(f"Sorry! The Equipment ID {equipmentID} is already being used by another player in this game session.")
 
     # With the new inputted info, a new PlayerData object is created.
     player = PlayerData(
         playerID=playerID,
-        codename=codename,
+        codename=str(codename).strip(),
         equipmentID=equipmentID,
         team=capitalTeamname
     )
 
-    # Put player into the correct team roster list
-    if capitalTeamname == "RED":
-        state.redTeam.append(player)
-    elif capitalTeamname == "GREEN":
-        state.greenTeam.append(player)
-    else:
-        # If the UI passes an incorrect team name, an error is stopped and a message shown
-        raise ValueError("Uh Oh! Your team must be 'RED' or 'GREEN'.")
-
+    roster.append(player)
+    
     # This is a play-by-play log line of what is happening
     recordLog("Added " + codename + " (ID: " + str(playerID) + ") to " +
               capitalTeamname + " with equipment " + str(equipmentID))
