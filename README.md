@@ -131,54 +131,182 @@ Terminal A should show: IP change line & a broadcast line now using 127.0.0.2:75
 Now you know that the network code works properly.
 
 
-**Run new network edge-case tests**
+## Network / Gameplay Test Checklist
 
-Now let's prove the network actually handles real hits and ignores bad data.
-Make sure the game is running in Terminal A, you've added at least two players (like ID 1 and ID 2), and you've pressed F5 to start the game. Wait until the 30-second warning finishes and the game says "Game On!".
+### Before You Start
+Use this exact setup so all of the tests make sense.
 
-In Terminal B, try sending these commands one by one:
+**Network IP**
+- Set the Network IP to `127.0.0.1` before running the main UDP gameplay tests.
 
-**Test a Valid Player Tag**
-- echo -n "1:2" | nc -u -w1 127.0.0.1 7501
-Terminal A / App: Look at the game log. Player 1 should tag Player 2, and Player 1 gets 10 points.
+**Roster Setup**
+Add these players before pressing F5:
 
-**Test a Valid Base Hit**
-- echo -n "1:53" | nc -u -w1 127.0.0.1 7501
-Terminal A / App: Player 1 triggers base 53, and their team gets 100 points.
+**Red Team**
+- Spiderman — Player ID 1, Equipment ID 11
+- Batman — Player ID 2, Equipment ID 22
 
-**Test Invalid Data (Garbage Text)**
+**Green Team**
+- Wolverine — Player ID 3, Equipment ID 33
+
+Make sure all equipment IDs are unique.
+
+This setup lets us test:
+- opponent tag = `11:33`
+- same-team tag = `11:22`
+- red-team base score = `11:43`
+- green-team base score = `33:53`
+
+---
+
+### 1. Start the Game
+In Terminal A:
+1. Run the program
+2. Add the players listed above
+3. Press **F5**
+4. Wait for the 30-second warning to finish
+5. When the game says **Game On!**, start the UDP tests below
+
+---
+
+### 3. Test a Valid Opponent Tag
+In Terminal B, run:
+
+- echo -n "11:33" | nc -u -w1 127.0.0.1 7501
+
+Spiderman tags Wolverine.
+
+Spiderman gains 10 points.
+
+Red team total increases by 10.
+
+
+### 4. Test a Same-Team Tag
+
+
+In Terminal B, run:
+
+- echo -n "11:22" | nc -u -w1 127.0.0.1 7501
+
+Spiderman hits Batman on the same team.
+
+Spiderman loses 10 points.
+
+Batman loses 10 points.
+
+Red team total drops by 20.
+
+### 5. Test a Valid Red Base Score (Code 43)
+
+In Terminal B, run:
+
+- echo -n "11:43" | nc -u -w1 127.0.0.1 7501
+
+Spiderman scores on the green base.
+
+Spiderman gains 100 points.
+
+Red team total increases by 100.
+
+A base icon appears next to Spiderman.
+
+
+### 6. Test a Valid Green Base Score (Code 53)
+
+In Terminal B, run:
+
+- echo -n "33:53" | nc -u -w1 127.0.0.1 7501
+
+Wolverine scores on the red base.
+
+Wolverine gains 100 points.
+
+Green team total increases by 100.
+
+A base icon appears next to Wolverine.
+
+
+### 7. Test Invalid Data (Garbage Text)
+
+In Terminal B, run:
+
 - echo -n "hello" | nc -u -w1 127.0.0.1 7501
-Terminal A: The game shouldn't crash. It should just print "Warning: Invalid UDP packet ignored -> hello".
 
-**Test Invalid Data (Missing Separator)**
+The program does not crash.
+
+- Terminal A prints:
+- Warning: Invalid UDP packet ignored -> hello
+
+No score changes.
+
+No team total changes.
+
+### 8. Test Invalid Data (Missing Separator)
+
+In Terminal B, run:
+
 - echo -n "9999" | nc -u -w1 127.0.0.1 7501
-Terminal A: It should safely print "Warning: Invalid UDP packet ignored -> 9999".
 
-**Verify Scheduled Game Broadcasts (202 and 221)**
+The program does not crash.
+
+- Terminal A prints:
+- Warning: Invalid UDP packet ignored -> 9999
+
+- No score changes.
+
+- No team total changes.
+
+### 9. Test an Unknown Transmitter
+
+
+In Terminal B, run:
+
+- echo -n "99:33" | nc -u -w1 127.0.0.1 7501
+
+The event is ignored.
+
+Terminal A / game log shows an unknown transmitter error.
+
+No score changes.
+
+No team total changes.
+
+### 10. Test a Self-Tag
+
+In Terminal B, run:
+
+- echo -n "11:11" | nc -u -w1 127.0.0.1 7501
+
+The event is ignored.
+
+Terminal A / game log shows a self-tag error.
+
+No score changes.
+
+No team total changes.
+
+
+### 11. Test an Event Before PLAYING Phase
+
+Run this before pressing F5, or during the 30-second warning:
+
+- echo -n "11:33" | nc -u -w1 127.0.0.1 7501
+
+The event is ignored.
+
+The game log says the event was ignored because the game is not in the PLAYING phase.
+
+No score changes.
+
+No team total changes.
+
+
+### 12. Verify Scheduled Game Broadcasts (202 and 221)**
 
 - Game Start (202): When that 30-second warning countdown finishes, check Terminal A. You should see a line saying: UDP Broadcast sent: 202 to 127.0.0.1:7500.
 - Game End (221): Let the 6-minute game clock completely run out. Once it hits zero, Terminal A should print UDP Broadcast sent: 221 to 127.0.0.1:7500 exactly three times.
 
-**Test a Same-Team Tag**
-- echo -n "1:3" | nc -u -w1 127.0.0.1 7501
-Terminal A / App: (Assuming Player 1 and Player 3 are on the same team) The game log will show a same team hit, and both players now lose 10 points.
 
-**Test a Valid Base Hit (Red Base 43)**
-- echo -n "1:43" | nc -u -w1 127.0.0.1 7501
-Terminal A / App: Player 1 triggered base code 43. Red wins 100 points.
-
-**Test an Unknown Transmitter**
-- echo -n "99:2" | nc -u -w1 127.0.0.1 7501
-Terminal A / App: The game ignores the hit and logs: "Invalid event error: the transmitter equipment ID 99 is unknown."
-
-**Test a Self-Tag**
-- echo -n "1:1" | nc -u -w1 127.0.0.1 7501
-Terminal A / App: The game ignores the hit and logs: "Invalid tag event error: the player 1 cannot tag themselves."
-
-**Test an Event Before PLAYING Phase**
-- echo -n "1:2" | nc -u -w1 127.0.0.1 7501
-*(Note: Send this before pressing F5, or during the 30-second warning countdown)*
-Terminal A / App: The game ignores the hit and logs: "The event was ignored because the game is not in the Playing phase at the moment."
 
 #
 **Look at the Database during runtime**
