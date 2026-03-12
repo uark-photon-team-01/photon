@@ -494,7 +494,13 @@ class ActionScreen(tk.Frame):
         except Exception:
             self._music_started = False
             self._music_file = None
+
+    def _start_session_track(self):
+        if self._music_started or not self.trackFiles:
+            return
     
+        chosen_track = self.trackFiles[0]
+        self._play_music_file(chosen_track, loops=0)
 
     
     def _stop_music(self):
