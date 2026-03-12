@@ -499,7 +499,7 @@ class ActionScreen(tk.Frame):
         if self._music_started or not self.trackFiles:
             return
     
-        chosen_track = self.trackFiles[0]
+        chosen_track = random.choice(self.trackFiles)
         self._play_music_file(chosen_track, loops=0)
 
     
