@@ -382,16 +382,17 @@ class EntryScreen(tk.Frame):
         self.statusVariable.set("Cleared all entries.")
 
     def startf5(self):
+        if self.startGame:
+            self.startGame()
+            return
+
         try:
             controller.startGame()
         except Exception as e:
             self.statusVariable.set(f"Unfortunately, the game could not be started. Here's why: {e}")
             return
 
-        if self.startGame:
-            self.startGame()
-        else:
-            self.statusVariable.set("The Game has begun!")
+        self.statusVariable.set("The Game has begun!")
 
     def refreshTables(self):
         self._paint_roster(self.redRos["rows"], self.redRoster)
@@ -420,20 +421,26 @@ class ActionScreen(tk.Frame):
     def __init__(self, parent, on_return_entry=None):
         super().__init__(parent, bg="black")
         self.on_return_entry = on_return_entry
+        self.auto_start = auto_start
 
         self._refresh_job = None
         self._last_log_index = 0
         self._flash_on = False
-        self._music_started = False
-        self._music_file = None
         self._return_button_visible = False
-
         self.baseIconImage = None
         self.baseIconTextFallback = " [BASE]"
+
+        self.trackFiles = []
+        self._music_started = False
+        self._music_file = None
 
         self._load_base_icon()
         self._build_layout()
         self._setup_music()
+
+        if self.auto_start:
+            controller.startGame()
+
         self.actionScreenUpdate()
 
     # ------------------------------------------------------------------
@@ -483,11 +490,13 @@ class ActionScreen(tk.Frame):
 
         try:
             self._music_file = random.choice(self.trackFiles)
+            pygame.mixer.music.stop()
             pygame.mixer.music.load(self._music_file)
             pygame.mixer.music.play()
             self._music_started = True
         except Exception:
             self._music_started = False
+            self._music_file = None
 
     def _stop_music(self):
         if PYGAME_OK:
@@ -747,7 +756,7 @@ class ActionScreen(tk.Frame):
                         left,
                         image=self.baseIconImage,
                         bg="black"
-                    ).pack(side="left", padx=(4, 0))
+                    ).pack(side="left", padx=(0, 4))
                 else:
                     tk.Label(
                         left,
@@ -755,7 +764,17 @@ class ActionScreen(tk.Frame):
                         fg="white",
                         bg="black",
                         font=("Arial", 9, "bold")
-                    ).pack(side="left", padx=(4, 0))
+                    ).pack(side="left", padx=(0, 4))
+
+            tk.Label(
+                left,
+                text=codename,
+                fg=color,
+                bg="black",
+                font=("Arial", 10, "bold"),
+                anchor="w"
+            ).pack(side="left")
+
 
             score = int(getattr(player, "score", 0))
             tk.Label(
@@ -951,7 +970,7 @@ def startApp():
                 root.after(0, forceWinGeo)
                 root.after(120, forceWinGeo)
 
-            action = ActionScreen(content, on_return_entry=backToEntry)
+            action = ActionScreen(content, on_return_entry=backToEntry, auto_start=True)
             show_screen(action)
             root.after(0, forceWinGeo)
             root.after(120, forceWinGeo)
