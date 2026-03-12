@@ -790,16 +790,7 @@ class ActionScreen(tk.Frame):
             left.pack(side="left", fill="x", expand=True)
 
             codename = str(getattr(player, "codename", "UNKNOWN"))
-
-            tk.Label(
-                left,
-                text=codename,
-                fg=color,
-                bg="black",
-                font=("Arial", 10, "bold"),
-                anchor="w"
-            ).pack(side="left")
-
+            
             if self._player_has_base_icon(player):
                 if self.baseIconImage is not None:
                     tk.Label(
@@ -815,7 +806,7 @@ class ActionScreen(tk.Frame):
                         bg="black",
                         font=("Arial", 9, "bold")
                     ).pack(side="left", padx=(0, 4))
-
+            
             tk.Label(
                 left,
                 text=codename,
