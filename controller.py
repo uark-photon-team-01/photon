@@ -351,7 +351,6 @@ def validateEvent(event):
         return False
 
     if state.phase != "PLAYING":
-        recordLog("The event was ignored because the game is not in the Playing phase at the moment.")
         return False
 
     eventType = str(event.get("type", "")).upper()
@@ -359,31 +358,25 @@ def validateEvent(event):
     hitID = event.get("hit")
 
     if eventType not in ("TAG", "BASE"):
-        recordLog(f"Invalid event error: there is an unknown type in {event}")
         return False
 
     if transmitterID is None or hitID is None:
-        recordLog(f"Invalid event error: there is a missing transmitter or hit in {event}")
         return False
 
     tagger = findPlayerByEquipmentID(transmitterID)
     if tagger is None:
-        recordLog(f"Invalid event error: the transmitter equipment ID {transmitterID} is unknown.")
         return False
 
     if eventType == "BASE":
         if not isBaseCode(hitID):
-            recordLog(f"Invalid base event error: the following base code is not supported {hitID}.")
             return False
         return True
 
     tagged = findPlayerByEquipmentID(hitID)
     if tagged is None:
-        recordLog(f"Invalid tag event error: there was no player found with the following equipment ID: {hitID}.")
         return False
 
     if transmitterID == hitID:
-        recordLog(f"Invalid tag event error: the player {transmitterID} cannot tag themselves.")
         return False
 
     return True
