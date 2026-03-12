@@ -300,7 +300,6 @@ def applyEvent(event):
 
     """
     if state.phase != "PLAYING":
-        recordLog("The event was ignored because the game is not in the Playing phase at the moment.")
         return False
 
     eventType = str(event.get("type", "")).upper()
@@ -309,17 +308,14 @@ def applyEvent(event):
     hitID = event.get("hit")
 
     if transmitterID is None or hitID is None:
-        recordLog(f"An Invalid event was received. There's a missing transmitter or hit field -> {event}")
         return False
 
     tagger = findPlayerByEquipmentID(transmitterID)
     if tagger is None:
-        recordLog(f"An Invalid event was received. There was no player found with equipment ID {transmitterID}.")
         return False
 
     if eventType == "BASE":
         if hitID not in (43, 53):
-            recordLog(f"An Invalid base event was received. There was a unsupported base code {hitID}.")
             return False
 
         return applyBaseHitScore(tagger, hitID)
@@ -328,17 +324,14 @@ def applyEvent(event):
         tagged = findPlayerByEquipmentID(hitID)
 
         if tagged is None:
-            recordLog(f"An Invalid tag event was received.  There's no player found with the equipment ID {hitID}.")
             return False
 
         if tagger.equipmentID == tagged.equipmentID:
-            recordLog(f"An Invalid tag event was received. The Player {tagger.codename} cannot tag themselves.")
             return False
 
         applyNormalHitScore(tagger, tagged)
         return True
 
-    recordLog(f"An Invalid event was received. There was an unknown event type '{eventType}'.")
     return False
 
 
@@ -537,7 +530,6 @@ def netBroadcastEquipment(equipmentID):
     For right now, let's just log what would be broadcast.
     """
     udp.netBroadcastEquipment(equipmentID)
-    recordLog("This equipment ID " + str(equipmentID) + " would be broadcast.")
 
 
 listener_is_running = False
