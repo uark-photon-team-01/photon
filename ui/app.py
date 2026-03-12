@@ -466,21 +466,21 @@ class ActionScreen(tk.Frame):
                         pass
 
     def _setup_music(self):
-    self.trackFiles = []
-
-    assets_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "assets"))
-    tracks_dir = os.path.join(assets_dir, "photon_tracks")
-    self.startCueFile = os.path.join(assets_dir, "game sounds", "Photon Start.wav")
-
-    if os.path.isdir(tracks_dir):
-        self.trackFiles = sorted(glob.glob(os.path.join(tracks_dir, "*.mp3")))
-
-    if PYGAME_OK:
-        try:
-            if not pygame.mixer.get_init():
-                pygame.mixer.init()
-        except Exception:
-            pass
+        self.trackFiles = []
+    
+        assets_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "assets"))
+        tracks_dir = os.path.join(assets_dir, "photon_tracks")
+        self.startCueFile = os.path.join(assets_dir, "game sounds", "Photon Start.wav")
+    
+        if os.path.isdir(tracks_dir):
+            self.trackFiles = sorted(glob.glob(os.path.join(tracks_dir, "*.mp3")))
+    
+        if PYGAME_OK:
+            try:
+                if not pygame.mixer.get_init():
+                    pygame.mixer.init()
+            except Exception:
+                pass
 
 
     def _play_music_file(self, path, loops=0):
