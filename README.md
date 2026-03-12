@@ -20,11 +20,9 @@ Ignore the numbers please.
 
 It will ask the password for student type "student" (ignore the air quotes).
 
-3. sudo apt-get install -y git python3 python3-pip python3-tk python3-psycopg2 python3-pil python3-pygame netcat-openbsd
-4. git clone https://github.com/uark-photon-team-01/photon.git 
-5. cd ~/photon
-6. ls
-7. bash install.sh
+3.  git clone https://github.com/uark-photon-team-01/photon.git 
+4. cd ~/photon
+5. bash install.sh
 
 -----
 
