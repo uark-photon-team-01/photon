@@ -8,7 +8,7 @@ echo "Updating package list..."
 sudo apt-get update
 
 echo "Installing required packages..."
-sudo apt-get install -y git python3 python3-tk python3-psycopg2 python3-pip python3-pil python3-pygame
+sudo apt-get install -y git python3 python3-tk python3-psycopg2 python3-pip python3-pil python3-pygame netcat-openbsd
 
 echo "Install complete."
 echo "To run the project:"
