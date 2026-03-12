@@ -76,7 +76,6 @@ def changePhase(phase):
     Using this, the UI can pick which screen will be shown.
     """
     state.phase = phase
-    recordLog("The current phase of the Game is " + str(phase) + ".")
 
 def recordLog(message):
     """
@@ -117,7 +116,6 @@ def startGame():
     state.timer_running = True
     lastTickOfTimer = time.monotonic()
 
-    recordLog("Game start has been requested.")
     recordLog("A 30-second warning countdown has begun. GET READY.")
 
 
@@ -275,37 +273,24 @@ def applyBaseHitScore(tagger, baseCode):
     """
     if baseCode == 53:
         if tagger.team != "GREEN":
-            recordLog(
-                f"Here, Base code 53 has been ignored. The following Player {tagger.codename} is on {tagger.team}, "
-                f"however, only a green player can score on the red base."
-            )
             return False
 
         tagger.score += 100
         tagger.has_baseIcon = True
-        recordLog(
-            f"Yay! The red base was scored! The following Player {tagger.codename} has triggered base code 53. "
-            f"{tagger.codename} gains 100 points and has the base icon now."
-        )
+        recordLog(f"{tagger.codename} scored on the red base (+100)")
+        netBroadcastEquipment(53)
         return True
 
     elif baseCode == 43:
         if tagger.team != "RED":
-            recordLog(
-                f"Here, Base code 43 has been ignored.  The following Player {tagger.codename} is on {tagger.team}, "
-                f"however, only a red player can score on the green base."
-            )
             return False
 
         tagger.score += 100
         tagger.has_baseIcon = True
-        recordLog(
-            f"Yay! The green base was scored! The following Player {tagger.codename} has triggered base code 43. "
-            f"{tagger.codename} gains 100 points and has the base icon now."
-        )
+        recordLog(f"{tagger.codename} scored on the green base (+100)")
+        netBroadcastEquipment(43)
         return True
 
-    recordLog(f"The following unsupported base code was received: {baseCode}")
     return False
     
 def applyEvent(event):
@@ -481,10 +466,6 @@ def addPlayerToTeam(team, playerID, codename, equipmentID):
     )
 
     roster.append(player)
-    
-    # This is a play-by-play log line of what is happening
-    recordLog("Added " + codename + " (ID: " + str(playerID) + ") to " +
-              capitalTeamname + " with equipment " + str(equipmentID))
 
     # After a player is added, then equipmentID is broadcast
     netBroadcastEquipment(equipmentID)
