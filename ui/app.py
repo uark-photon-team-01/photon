@@ -418,7 +418,7 @@ class EntryScreen(tk.Frame):
 # =============================================================================
 
 class ActionScreen(tk.Frame):
-    def __init__(self, parent, on_return_entry=None):
+    def __init__(self, parent, on_return_entry=None, auto_start=False):
         super().__init__(parent, bg="black")
         self.on_return_entry = on_return_entry
         self.auto_start = auto_start
@@ -433,6 +433,8 @@ class ActionScreen(tk.Frame):
         self.trackFiles = []
         self._music_started = False
         self._music_file = None
+        self.startCueFile = None
+        self._last_phase = None
 
         self._load_base_icon()
         self._build_layout()
@@ -464,48 +466,96 @@ class ActionScreen(tk.Frame):
                         pass
 
     def _setup_music(self):
-        self.trackFiles = []
-        tracks_dir = os.path.join(os.path.dirname(__file__), "..", "assets", "photon_tracks")
-        tracks_dir = os.path.normpath(tracks_dir)
+    self.trackFiles = []
 
-        if os.path.isdir(tracks_dir):
-            self.trackFiles = glob.glob(os.path.join(tracks_dir, "*.mp3"))
+    assets_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "assets"))
+    tracks_dir = os.path.join(assets_dir, "photon_tracks")
+    self.startCueFile = os.path.join(assets_dir, "game sounds", "Photon Start.wav")
 
-        if PYGAME_OK:
-            try:
-                if not pygame.mixer.get_init():
-                    pygame.mixer.init()
-            except Exception:
-                pass
+    if os.path.isdir(tracks_dir):
+        self.trackFiles = sorted(glob.glob(os.path.join(tracks_dir, "*.mp3")))
 
-    def _start_music_if_needed(self, phase):
-        if phase not in ("WARNING", "PLAYING"):
-            return
-
-        if self._music_started:
-            return
-
-        if not PYGAME_OK or not self.trackFiles:
-            return
-
+    if PYGAME_OK:
         try:
-            self._music_file = random.choice(self.trackFiles)
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+        except Exception:
+            pass
+
+
+    def _play_music_file(self, path, loops=0):
+        if not PYGAME_OK or not path or not os.path.exists(path):
+            return
+    
+        try:
             pygame.mixer.music.stop()
-            pygame.mixer.music.load(self._music_file)
-            pygame.mixer.music.play()
+            pygame.mixer.music.load(path)
+            pygame.mixer.music.play(loops=loops)
             self._music_started = True
+            self._music_file = path
         except Exception:
             self._music_started = False
             self._music_file = None
-
+    
+    
+    def _start_warning_music(self):
+        if self._music_started or not self.trackFiles:
+            return
+    
+        
+        self._play_music_file(self.trackFiles[0], loops=0)
+    
+    
+    def _start_live_music(self):
+        if self._music_started or not self.trackFiles:
+            return
+    
+        live_choices = self.trackFiles[1:] if len(self.trackFiles) > 1 else self.trackFiles
+        self._play_music_file(random.choice(live_choices), loops=-1)
+    
+    
+    def _play_begin_cue(self):
+        if not PYGAME_OK or not self.startCueFile or not os.path.exists(self.startCueFile):
+            return
+    
+        try:
+            sound = pygame.mixer.Sound(self.startCueFile)
+            sound.play()
+        except Exception:
+            pass
+    
+    
     def _stop_music(self):
         if PYGAME_OK:
             try:
                 pygame.mixer.music.stop()
             except Exception:
                 pass
+    
         self._music_started = False
         self._music_file = None
+    
+    
+    def _handle_phase_audio(self, phase):
+        if phase == self._last_phase:
+            return
+    
+        if phase == "WARNING":
+            self._stop_music()
+            self._start_warning_music()
+    
+        elif phase == "PLAYING":
+            if self._last_phase == "WARNING":
+                self._stop_music()
+                self._play_begin_cue()
+                self.after(250, self._start_live_music)
+            else:
+                self._start_live_music()
+    
+        else:
+            self._stop_music()
+    
+        self._last_phase = phase
 
     # ------------------------------------------------------------------
     # Layout
@@ -809,10 +859,7 @@ class ActionScreen(tk.Frame):
 
         self._show_return_button_if_needed(phase)
 
-        if phase == "ENDED":
-            self._stop_music()
-        else:
-            self._start_music_if_needed(phase)
+        self._handle_phase_audio(phase)
 
     def eventLogUpdated(self, snapshot):
         event_log = snapshot.get("event_log", [])
