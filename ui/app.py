@@ -758,10 +758,6 @@ class ActionScreen(tk.Frame):
             ).pack(anchor="w", padx=6, pady=2)
             return
 
-        print("Team Size:", len(team))
-        for player in team:
-            print("PLAYER:", player.codename, "score=", player.score, "base=", getattr(player, "has_baseIcon", False))
-
         for player in team:
             row = tk.Frame(frame, bg="black")
             row.pack(fill="x", padx=4, pady=1)
