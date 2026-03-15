@@ -20,11 +20,8 @@ Ignore the numbers please.
 
 It will ask the password for student type "student" (ignore the air quotes).
 
-3.  git clone https://github.com/uark-photon-team-01/photon.git 
+3. git clone https://github.com/uark-photon-team-01/photon.git 
 4. cd ~/photon
-5. bash install.sh
-
------
 
 **Before you run anything, make sure to pull the latest code (Section B)**
 
@@ -33,6 +30,7 @@ It will ask the password for student type "student" (ignore the air quotes).
 3. git reset --hard origin/main
 4. git clean -fd
 5. git rev-parse --short HEAD
+6. bash install.sh
 
 -----
 
