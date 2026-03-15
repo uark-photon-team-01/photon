@@ -498,27 +498,35 @@ class ActionScreen(tk.Frame):
         if os.path.isdir(tracks_dir):
             self.trackFiles = sorted(glob.glob(os.path.join(tracks_dir, "*.mp3")))
     
+        print("PYGAME_OK =", PYGAME_OK)
+        print("Found tracks:", len(self.trackFiles))
+    
         if PYGAME_OK:
             try:
                 if not pygame.mixer.get_init():
                     pygame.mixer.init()
-            except Exception:
-                pass
+                print("pygame mixer initialized")
+            except Exception as e:
+                print("pygame mixer init failed:", e)
 
 
     def _play_music_file(self, path, loops=0):
         if not PYGAME_OK or not path or not os.path.exists(path):
+            print("Music skipped:", path)
             return
     
         try:
+            print("Trying to play:", path)
             pygame.mixer.music.stop()
             pygame.mixer.music.load(path)
             pygame.mixer.music.play(loops=loops)
             self._music_started = True
             self._music_file = path
-        except Exception:
+            print("Music started")
+        except Exception as e:
             self._music_started = False
             self._music_file = None
+            print("Music play failed:", e)
 
     def _start_session_track(self):
         if self._music_started or not self.trackFiles:
