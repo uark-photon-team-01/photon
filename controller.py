@@ -35,6 +35,9 @@ def getRedTotalScore():
 def getGreenTotalScore():
     return sum(player.score for player in state.greenTeam)
 
+def dbUpdatePlayer(playerID, codename):
+    return database.updatePlayer(playerID, codename)
+
 
 def getActionSnapshot():
     return {
