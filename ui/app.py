@@ -505,35 +505,79 @@ class ActionScreen(tk.Frame):
             try:
                 if not pygame.mixer.get_init():
                     pygame.mixer.init()
-                print("pygame mixer initialized")
+                pygame.mixer.music.set_volume(1.0)
+                print("pygame mixer initialized:", pygame.mixer.get_init())
             except Exception as e:
                 print("pygame mixer init failed:", e)
+
+    def _music_is_actually_playing(self):
+        if not PYGAME_OK:
+            return False
+    
+        try:
+            if not pygame.mixer.get_init():
+                return False
+            return pygame.mixer.music.get_busy()
+        except Exception as e:
+            print("Music busy-check failed:", e)
+            return False
 
 
     def _play_music_file(self, path, loops=0):
         if not PYGAME_OK or not path or not os.path.exists(path):
             print("Music skipped:", path)
+            self._music_started = False
+            self._music_file = None
             return
     
         try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+    
             print("Trying to play:", path)
             pygame.mixer.music.stop()
             pygame.mixer.music.load(path)
+            pygame.mixer.music.set_volume(1.0)
             pygame.mixer.music.play(loops=loops)
-            self._music_started = True
-            self._music_file = path
-            print("Music started")
+    
+            if self._music_is_actually_playing():
+                self._music_started = True
+                self._music_file = path
+                print("Music started and verified")
+            else:
+                self._music_started = False
+                self._music_file = None
+                print("Music play call returned, but mixer is not busy. Check VM audio output/device.")
         except Exception as e:
             self._music_started = False
             self._music_file = None
             print("Music play failed:", e)
 
     def _start_session_track(self):
-        if self._music_started or not self.trackFiles:
+        if not self.trackFiles:
+            return
+    
+        if self._music_is_actually_playing():
+            self._music_started = True
             return
     
         chosen_track = random.choice(self.trackFiles)
         self._play_music_file(chosen_track, loops=0)
+
+    def _ensure_music_playing(self):
+        if not self.trackFiles:
+            return
+    
+        if self._music_is_actually_playing():
+            self._music_started = True
+            return
+    
+        print("Music is not busy during active phase; retrying track playback.")
+    
+        if self._music_file and os.path.exists(self._music_file):
+            self._play_music_file(self._music_file, loops=0)
+        else:
+            self._start_session_track()
 
     
     def _stop_music(self):
@@ -548,13 +592,11 @@ class ActionScreen(tk.Frame):
     
     
     def _handle_phase_audio(self, phase):
-        if phase == self._last_phase:
-            return
-    
         if phase in ("WARNING", "PLAYING"):
-            self._start_session_track()
+            self._ensure_music_playing()
         else:
-            self._stop_music()
+            if self._music_started or self._music_is_actually_playing():
+                self._stop_music()
     
         self._last_phase = phase
 
