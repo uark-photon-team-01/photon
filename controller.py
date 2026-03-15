@@ -118,9 +118,7 @@ def startGame():
     state.phase = "WARNING"
     state.time_remaining = warningSeconds
     state.timer_running = True
-
-    # Hold the timer at 30 for 13 seconds before it starts counting down
-    lastTickOfTimer = time.monotonic() + warningDelaySeconds
+    lastTickOfTimer = time.monotonic()
 
     recordLog("A 30-second warning countdown has begun. GET READY.")
 
