@@ -450,19 +450,28 @@ class ActionScreen(tk.Frame):
 
     def _load_base_icon(self):
         assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
-        jpg_path = os.path.normpath(os.path.join(assets_dir, "baseicon.jpg"))
         png_path = os.path.normpath(os.path.join(assets_dir, "baseicon.png"))
+        jpg_path = os.path.normpath(os.path.join(assets_dir, "baseicon.jpg"))
+    
+        # Try native Tkinter PNG first (does not need Pillow)
+        if os.path.exists(png_path):
+            try:
+                self.baseIconImage = tk.PhotoImage(file=png_path)
+                return
+            except Exception as e:
+                print(f"Could not load PNG base icon: {e}")
 
-        if PIL_OK:
-            for path in (png_path, jpg_path):
-                if os.path.exists(path):
-                    try:
-                        img = Image.open(path)
-                        img = img.resize((16, 16))
-                        self.baseIconImage = ImageTk.PhotoImage(img)
-                        return
-                    except Exception:
-                        pass
+    # Then try JPG through Pillow
+    if PIL_OK and os.path.exists(jpg_path):
+        try:
+            img = Image.open(jpg_path)
+            img = img.resize((16, 16))
+            self.baseIconImage = ImageTk.PhotoImage(img)
+            return
+        except Exception as e:
+            print(f"Could not load JPG base icon: {e}")
+
+    print("Warning: Base icon could not be loaded. Using [BASE] fallback.")
 
     def _setup_music(self):
         self.trackFiles = []
