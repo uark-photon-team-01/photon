@@ -64,6 +64,7 @@ class EntryScreen(tk.Frame):
 
         self.playerInDB = False
         self.codenameForDB = None
+        self._warning_music_start_at = None
 
         titleFrame = tk.Frame(self, bg="black")
         titleFrame.pack(fill="x", pady=(10, 0))
@@ -592,11 +593,30 @@ class ActionScreen(tk.Frame):
     
     
     def _handle_phase_audio(self, phase):
-        if phase in ("WARNING", "PLAYING"):
+        now = time.monotonic()
+    
+        if phase != self._last_phase:
+            if phase == "WARNING":
+                # Delay countdown music by 13 seconds, but let timer run immediately
+                self._warning_music_start_at = now + 13
+            else:
+                self._warning_music_start_at = None
+    
+        if phase == "WARNING":
+            if self._warning_music_start_at is not None and now >= self._warning_music_start_at:
+                self._ensure_music_playing()
+            else:
+                # Make sure music does not start too early during warning
+                if self._music_started or self._music_is_actually_playing():
+                    self._stop_music()
+    
+        elif phase == "PLAYING":
             self._ensure_music_playing()
+    
         else:
             if self._music_started or self._music_is_actually_playing():
                 self._stop_music()
+            self._warning_music_start_at = None
     
         self._last_phase = phase
 
