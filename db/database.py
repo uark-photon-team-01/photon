@@ -123,6 +123,22 @@ def addPlayer(playerID, codename):
     finally:
         conn.close()
 
+def updatePlayer(playerID, codename):
+    try:
+        conn = psycopg2.connect(dbname="photon")
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE players SET codename = %s WHERE id = %s",
+            (codename, playerID)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "success"
+    except Exception as e:
+        print("DB update error:", e)
+        return "db_error"
+
 
 def deletePlayer(playerID):
     """Delete a specific player from the database.
