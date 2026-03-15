@@ -37,8 +37,10 @@ except Exception:
 try:
     from PIL import Image, ImageTk
     PIL_OK = True
-except Exception:
+    print("Pillow/ImageTk loaded successfully.")
+except Exception as e:
     PIL_OK = False
+    print("Pillow/ImageTk import failed:", e)
 
 MS_SplashTime = 3000
 teamRows = 15
@@ -450,26 +452,23 @@ class ActionScreen(tk.Frame):
 
     def _load_base_icon(self):
         assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
-        png_path = os.path.normpath(os.path.join(assets_dir, "baseicon.png"))
         jpg_path = os.path.normpath(os.path.join(assets_dir, "baseicon.jpg"))
     
-        # Try native Tkinter PNG first (does not need Pillow)
-        if os.path.exists(png_path):
-            try:
-                self.baseIconImage = tk.PhotoImage(file=png_path)
-                return
-            except Exception as e:
-                print(f"Could not load PNG base icon: {e}")
+        print("Loading base icon from:", jpg_path)
+        print("JPG exists:", os.path.exists(jpg_path))
+        print("PIL_OK:", PIL_OK)
     
-        # Then try JPG through Pillow
+        self.baseIconImage = None
+    
         if PIL_OK and os.path.exists(jpg_path):
             try:
                 img = Image.open(jpg_path)
                 img = img.resize((16, 16))
                 self.baseIconImage = ImageTk.PhotoImage(img)
+                print("Loaded JPG base icon successfully.")
                 return
             except Exception as e:
-                print(f"Could not load JPG base icon: {e}")
+                print("Could not load JPG base icon:", e)
     
         print("Warning: Base icon could not be loaded. Using [BASE] fallback.")
 
