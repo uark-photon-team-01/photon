@@ -24,6 +24,8 @@ It will ask the password for student type "student" (ignore the air quotes).
 4. cd ~/photon
 
 **Before you run anything, make sure to pull the latest code (Section B)**
+- This makes sure the latest code is pulled no matter what. 
+- Make sure to run bash.install.h AFTER steps 1 - 5, NOT before
 
 1. git checkout main
 2. git fetch origin
