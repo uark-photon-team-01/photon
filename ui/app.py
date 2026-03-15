@@ -286,9 +286,10 @@ class EntryScreen(tk.Frame):
             self.entryForCodename.configure(state="normal")
             self.entryForCodename.delete(0, "end")
             self.entryForCodename.insert(0, codename)
-            self.entryForCodename.configure(state="readonly")
+            self.entryForCodename.focus_set()
+            self.entryForCodename.selection_range(0, "end")
             self.statusVariable.set(
-                f"YAY! Player found in DB, using codename {codename}"
+                f"Player found in DB. You may keep or update the codename."
             )
 
         elif status == "not_found":
@@ -337,9 +338,25 @@ class EntryScreen(tk.Frame):
             return
 
         if self.playerInDB:
-            self.statusVariable.set(
-                f"Using existing codename '{codenameOfUse}' for Player {playerID}."
-            )
+            if codenameOfUse != self.codenameForDB:
+                try:
+                    status = controller.dbUpdatePlayer(playerID, codenameOfUse)
+                except Exception:
+                    self.statusVariable.set("Database error: player was not updated.")
+                    return
+        
+                if status == "success":
+                    self.statusVariable.set(
+                        f"Player {playerID} codename updated to '{codenameOfUse}'."
+                    )
+                    self.codenameForDB = codenameOfUse
+                else:
+                    self.statusVariable.set("Database error: player was not updated.")
+                    return
+            else:
+                self.statusVariable.set(
+                    f"Using existing codename '{codenameOfUse}' for Player {playerID}."
+                )
         else:
             try:
                 status = controller.dbInsertPlayer(playerID, codenameOfUse)
