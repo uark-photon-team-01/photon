@@ -120,6 +120,7 @@ def startGame():
     lastTickOfTimer = time.monotonic()
 
     recordLog("A 30-second warning countdown has begun. GET READY.")
+    recordLog("After 13 seconds, the countdown intro will begin.")
 
 
 def moveOneSecond():
