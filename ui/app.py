@@ -27,6 +27,7 @@ import random
 import tkinter as tk
 from tkinter import ttk
 import controller
+import time
 
 try:
     import pygame
@@ -47,6 +48,7 @@ teamRows = 15
 
 GAME_SECONDS = 360
 WARNING_SECONDS = 30
+WARNING_MUSIC_DELAY = 13
 
 
 # =============================================================================
@@ -64,7 +66,6 @@ class EntryScreen(tk.Frame):
 
         self.playerInDB = False
         self.codenameForDB = None
-        self._warning_music_start_at = None
 
         titleFrame = tk.Frame(self, bg="black")
         titleFrame.pack(fill="x", pady=(10, 0))
@@ -454,6 +455,7 @@ class ActionScreen(tk.Frame):
         self._music_started = False
         self._music_file = None
         self._last_phase = None
+        self._warning_music_start_at = None
 
         self._load_base_icon()
         self._build_layout()
@@ -598,7 +600,7 @@ class ActionScreen(tk.Frame):
         if phase != self._last_phase:
             if phase == "WARNING":
                 # Delay countdown music by 13 seconds, but let timer run immediately
-                self._warning_music_start_at = now + 13
+                self._warning_music_start_at = now + WARNING_MUSIC_DELAY
             else:
                 self._warning_music_start_at = None
     
