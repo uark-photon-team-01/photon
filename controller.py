@@ -12,7 +12,6 @@ import time
 # Everyone will read & write through this object.
 state = Game_State()
 warningSeconds = 30
-warningDelaySeconds = 13
 playSeconds = 360
 
 lastTickOfTimer = None
