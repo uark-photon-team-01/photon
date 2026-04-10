@@ -32,6 +32,7 @@ The parts of code that were pulled from Jim's repo were:
 
 # This code is from Jim's repo: python-pg.py
 import psycopg2
+import psycopg2.errors
 from psycopg2 import sql  # this is used for advanced SQL building later
 
 
@@ -97,7 +98,7 @@ def addPlayer(playerID, codename):
     """Insert a new player into the database.
 
     Only call this after confirming the player does NOT already exist.
-    If a playerID already exists, this will raise an IntegrityError because
+    If a playerID already exists, this will raise a UniqueViolation because
     of the primary key constraint — that is intentional.
 
     Args:
@@ -105,7 +106,7 @@ def addPlayer(playerID, codename):
         codename (str): The player's chosen codename
 
     Raises:
-        psycopg2.IntegrityError: If playerID already exists (duplicate primary key)
+        psycopg2.errors.UniqueViolation: If playerID already exists (duplicate primary key)
         psycopg2.Error: For other database errors
 
     Note:
@@ -120,24 +121,18 @@ def addPlayer(playerID, codename):
             (playerID, codename),
         )
         conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
-def updatePlayer(playerID, codename):
-    try:
-        conn = psycopg2.connect(dbname="photon")
-        cur = conn.cursor()
-        cur.execute(
-            "UPDATE players SET codename = %s WHERE id = %s",
-            (codename, playerID)
-        )
-        conn.commit()
-        cur.close()
-        conn.close()
-        return "success"
-    except Exception as e:
-        print("DB update error:", e)
-        return "db_error"
+
+# updatePlayer() has been intentionally removed.
+#
+# Per project rules: if a player ID is already in the database, use that
+# codename as-is. Do NOT update it. No UPDATE statements belong in this file.
+# The controller-friendly wrappers below enforce this at the flow level.
 
 
 def deletePlayer(playerID):
@@ -228,22 +223,15 @@ def dbInsertPlayer(playerID, codename):
             - "db_error"  if another database error occurred
     """
     try:
-        # Explicitly check for existing player first to guarantee duplicate
-        # detection regardless of how psycopg2/PostgreSQL handles IntegrityError
-        existing = obtainCodename(playerID)
-        if existing is not None:
-            print(f"Player {playerID} already exists in database")
-            return "duplicate"
         addPlayer(playerID, codename)
         return "success"
+    except psycopg2.errors.UniqueViolation:
+        # Primary key already exists — clean duplicate signal, no string matching needed
+        print(f"Duplicate: player {playerID} already exists in database")
+        return "duplicate"
     except Exception as e:
-        error_msg = str(e).lower()
-        if "duplicate" in error_msg or "unique" in error_msg or "already exists" in error_msg:
-            print(f"Player {playerID} already exists in database")
-            return "duplicate"
-        else:
-            print(f"Database error in dbInsertPlayer: {e}")
-            return "db_error"
+        print(f"Database error in dbInsertPlayer: {e}")
+        return "db_error"
 
 
 def dbDeletePlayer(playerID):
