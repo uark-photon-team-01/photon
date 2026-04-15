@@ -35,9 +35,6 @@ def getRedTotalScore():
 def getGreenTotalScore():
     return sum(player.score for player in state.greenTeam)
 
-def dbUpdatePlayer(playerID, codename):
-    return database.updatePlayer(playerID, codename)
-
 
 def getActionSnapshot():
     return {
@@ -516,8 +513,8 @@ def netSetIp(ip):
     But for right now let's just log it.
     """
     udp.netSetIp(ip)
-    recordLog("The network IP is set to " + str(ip))
-    print("The network IP is set to " + str(ip))
+    recordLog("The broadcast IP is set to " + str(ip))
+    print("The broadcast IP is set to " + str(ip))
 
 
 def netBroadcastEquipment(equipmentID):
