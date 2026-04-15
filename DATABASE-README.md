@@ -65,7 +65,7 @@ CREATE TABLE players (
 - `id` (INTEGER, PRIMARY KEY): Unique player ID - **must be unique**, no duplicates allowed
 - `codename` (TEXT, NOT NULL): Player's chosen codename/username
 
-**Note:** The application does **NOT** modify the database schema. It only performs SELECT, INSERT, UPDATE, and DELETE operations on existing tables.
+**Note:** The application does **NOT** modify the database schema. It only performs normal row-level operations on the existing table and does not change the schema. In normal app flow, it uses SELECT and INSERT; DELETE is only for targeted cleanup/testing.
 
 ### 4. **Set up database permissions (if needed)**
 
@@ -193,7 +193,7 @@ The application expects a PostgreSQL database with the following configuration:
 - **Username:** `student`
 - **Table:** `players` with columns `(id, codename)`
 
-**Note:** The application does **NOT** modify the database schema. It only performs SELECT, INSERT, UPDATE, and DELETE operations on existing tables.
+**Note:** The application does **NOT** modify the database schema. It only performs normal row-level operations on the existing table and does not change the schema. In normal app flow, it uses SELECT and INSERT; DELETE is only for targeted cleanup/testing.
 
 ---
 
@@ -204,7 +204,7 @@ The application uses UDP sockets for equipment communication:
 - **Receive port:** 7501 (hit detection)
 - **Default IP:** 127.0.0.1 (can be changed via UI)
 
-You can set a different network IP using the "Set Network IP" field at the bottom of the entry screen.
+You can set a different broadcast IP using the "Set Broadcast IP" field at the bottom of the entry screen. The listener still accepts any IP on port 7501.
 
 ---
 
@@ -247,7 +247,7 @@ sudo -u postgres psql -d photon -c "GRANT ALL PRIVILEGES ON TABLE players TO stu
 ### Duplicate Key Errors
 If you try to add a player that already exists:
 - The `id` column is a PRIMARY KEY and must be unique
-- Use the "Update Codename" button to change existing player names
+- Existing players keep their stored codename as-is
 - Or choose a different player ID number
 
 ### Tkinter/GUI Issues
@@ -258,7 +258,7 @@ If the GUI doesn't appear:
 ### Network/UDP Issues
 If equipment broadcasts aren't working:
 1. Check firewall settings allow UDP ports 7500 and 7501
-2. Verify the correct network IP is set in the application
+2. Verify the correct broadcast IP is set in the application
 
 ---
 
