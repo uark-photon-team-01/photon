@@ -1,4 +1,4 @@
-**How to run the program 101**
+**How to run the program**
 -----
 
 **Follow these commands EXACTLY** (ignore the air quotes)
@@ -25,7 +25,7 @@ It will ask the password for student type "student" (ignore the air quotes).
 
 **Before you run anything, make sure to pull the latest code (Section B)**
 - This makes sure the latest code is pulled no matter what. 
-- Make sure to run bash.install.h AFTER steps 1 - 5, NOT before
+- Make sure to run bash install.sh AFTER steps 1 - 5, NOT before
 
 1. git checkout main
 2. git fetch origin
@@ -122,20 +122,28 @@ Back in Terminal A, you should see received line now.
 
 **Confirm an end-to-end IP change**
 
-In the game, change the Network IP to 127.0.0.2, then click Set Network IP. Now Add a player for the red team.
+In the game, change the Broadcast IP to 127.0.0.2, then click Set Broadcast IP. Now add a player for the red team.
 
 Terminal A should show: IP change line & a broadcast line now using 127.0.0.2:7500
 
 Now you know that the network code works properly.
 
 
+## Hardware / Traffic Generator Testing
+
+- UDP broadcast/client traffic goes out on port `7500`.
+- The listener accepts packets from any IP address on port `7501` by binding to `0.0.0.0`.
+- The Broadcast IP field in the UI changes only the client/broadcast destination. It does not change the listener address.
+- The instructor traffic generator waits for `202` before sending gameplay traffic and stops after your program sends `221`.
+- Use the provided database as-is. Do not alter the schema or recreate the table.
+
 ## Network / Gameplay Test Checklist
 
 ### Before You Start
 Use this exact setup so all of the tests make sense.
 
-**Network IP**
-- Set the Network IP to `127.0.0.1` before running the main UDP gameplay tests.
+**Broadcast IP**
+- Set the Broadcast IP to `127.0.0.1` before running the main UDP gameplay tests.
 
 **Roster Setup**
 Add these players before pressing F5:
@@ -299,7 +307,7 @@ No score changes.
 No team total changes.
 
 
-### 12. Verify Scheduled Game Broadcasts (202 and 221)**
+### 12. Verify Scheduled Game Broadcasts (202 and 221)
 
 - Game Start (202): When that 30-second warning countdown finishes, check Terminal A. You should see a line saying: UDP Broadcast sent: 202 to 127.0.0.1:7500.
 - Game End (221): Let the 6-minute game clock completely run out. Once it hits zero, Terminal A should print UDP Broadcast sent: 221 to 127.0.0.1:7500 exactly three times.
