@@ -288,11 +288,9 @@ class EntryScreen(tk.Frame):
             self.entryForCodename.configure(state="normal")
             self.entryForCodename.delete(0, "end")
             self.entryForCodename.insert(0, codename)
-            self.entryForCodename.focus_set()
-            self.entryForCodename.selection_range(0, "end")
-            self.statusVariable.set(
-                f"Player found in DB. You may keep or update the codename."
-            )
+            self.entryForCodename.configure(state="readonly")
+            self.entryEquipID.focus_set()
+            self.statusVariable.set("Player found in DB. Using existing codename.")
 
         elif status == "not_found":
             self.playerInDB = False
@@ -334,31 +332,20 @@ class EntryScreen(tk.Frame):
             self.statusVariable.set("Please enter a codename.")
             return
 
+        if self.playerInDB:
+            codenameOfUse = self.codenameForDB
+        else:
+            self.entryForCodename.configure(state="normal")
+
         roster = self.redRoster if team == "RED" else self.greenRoster
         if len(roster) >= teamRows:
             self.statusVariable.set(f"{team} team is full ({teamRows} players).")
             return
 
         if self.playerInDB:
-            if codenameOfUse != self.codenameForDB:
-                try:
-                    status = controller.dbUpdatePlayer(playerID, codenameOfUse)
-                except Exception:
-                    self.statusVariable.set("Database error: player was not updated.")
-                    return
-        
-                if status == "success":
-                    self.statusVariable.set(
-                        f"Player {playerID} codename updated to '{codenameOfUse}'."
-                    )
-                    self.codenameForDB = codenameOfUse
-                else:
-                    self.statusVariable.set("Database error: player was not updated.")
-                    return
-            else:
-                self.statusVariable.set(
-                    f"Using existing codename '{codenameOfUse}' for Player {playerID}."
-                )
+            self.statusVariable.set(
+                f"Using existing codename '{codenameOfUse}' for Player {playerID}."
+            )
         else:
             try:
                 status = controller.dbInsertPlayer(playerID, codenameOfUse)
@@ -648,39 +635,22 @@ class ActionScreen(tk.Frame):
         )
         self.timerLabel.pack(pady=(0, 6))
 
-        totalsBar = tk.Frame(self, bg="black")
-        totalsBar.pack(fill="x", pady=(4, 0))
-
-        tk.Label(
-            totalsBar, text="RED TEAM TOTAL",
-            fg="#ff4444", bg="black", font=("Arial", 12, "bold")
-        ).grid(row=0, column=0, padx=40)
-
-        self.redTotalLabel = tk.Label(
-            totalsBar, text="0",
-            fg="#ff4444", bg="black", font=("Arial", 22, "bold")
-        )
-        self.redTotalLabel.grid(row=1, column=0, padx=40)
-
-        tk.Label(
-            totalsBar, text="GREEN TEAM TOTAL",
-            fg="#44ff44", bg="black", font=("Arial", 12, "bold")
-        ).grid(row=0, column=1, padx=40)
-
-        self.greenTotalLabel = tk.Label(
-            totalsBar, text="0",
-            fg="#44ff44", bg="black", font=("Arial", 22, "bold")
-        )
-        self.greenTotalLabel.grid(row=1, column=1, padx=40)
-
-        totalsBar.columnconfigure(0, weight=1)
-        totalsBar.columnconfigure(1, weight=1)
-
         middleArea = tk.Frame(self, bg="black")
         middleArea.pack(fill="both", expand=True, pady=(10, 0))
 
         redPane = tk.Frame(middleArea, bg="black")
         redPane.grid(row=0, column=0, padx=14, sticky="nsew")
+
+        tk.Label(
+            redPane, text="RED TEAM TOTAL",
+            fg="#ff4444", bg="black", font=("Arial", 12, "bold")
+        ).pack()
+
+        self.redTotalLabel = tk.Label(
+            redPane, text="0",
+            fg="#ff4444", bg="black", font=("Arial", 22, "bold")
+        )
+        self.redTotalLabel.pack(pady=(0, 6))
 
         tk.Label(
             redPane, text="RED TEAM",
@@ -693,6 +663,17 @@ class ActionScreen(tk.Frame):
 
         greenPane = tk.Frame(middleArea, bg="black")
         greenPane.grid(row=0, column=1, padx=14, sticky="nsew")
+
+        tk.Label(
+            greenPane, text="GREEN TEAM TOTAL",
+            fg="#44ff44", bg="black", font=("Arial", 12, "bold")
+        ).pack()
+
+        self.greenTotalLabel = tk.Label(
+            greenPane, text="0",
+            fg="#44ff44", bg="black", font=("Arial", 22, "bold")
+        )
+        self.greenTotalLabel.pack(pady=(0, 6))
 
         tk.Label(
             greenPane, text="GREEN TEAM",
@@ -992,7 +973,7 @@ def startApp():
     footer = tk.Frame(root, bg="black")
     footer.pack(side="bottom", fill="x")
 
-    ttk.Label(footer, text="Network IP:").pack(side=tk.LEFT, padx=6, pady=6)
+    ttk.Label(footer, text="Broadcast IP:").pack(side=tk.LEFT, padx=6, pady=6)
     ip_entry = ttk.Entry(footer, width=20)
     ip_entry.pack(side=tk.LEFT, padx=6, pady=6)
     ip_entry.insert(0, "127.0.0.1")
@@ -1000,7 +981,7 @@ def startApp():
     def clickSetIP():
         controller.netSetIp(ip_entry.get().strip())
 
-    ttk.Button(footer, text="Set Network IP", command=clickSetIP).pack(side=tk.LEFT, padx=6, pady=6)
+    ttk.Button(footer, text="Set Broadcast IP", command=clickSetIP).pack(side=tk.LEFT, padx=6, pady=6)
 
     presentScreen = {"screen": None}
 
