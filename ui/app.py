@@ -1,24 +1,17 @@
 """
-The Sprint 2 requirements for this file are the following:
-- Splash screen for at about 3 seconds (the logo is provided in Jim's repo)
-- Then switch to Player Entry screen
-- F12 clears all entries (it will call the controller)
-- F5 starts game (switch to action screen later)
-- Simplified to ONE button: Add Player handles all scenarios
-- Track used Player IDs to prevent duplicates in the same game session
+Photon Laser Tag UI Application
 
-Sprint 3 additions:
-- Real ActionScreen replacing the placeholder
-- Countdown timer: start sequence → 30-second warning → 6-minute game clock
-- Red and green team scoreboards populated from entry screen roster
-- Play-by-play event log panel
+This file handles the full front-end UI using Tkinter.
 
-Sprint 3 finishing work:
-- Base icon when has_baseIcon / hasbaseIcon is true
-- Flashing winning team total
-- Visible Return button after game ends
-- Live ActionScreen from controller snapshot
-- Optional random MP3 playback (fails gracefully if pygame is unavailable)
+Main responsibilities:
+- Splash screen → Entry screen → Action screen flow
+- Player entry + validation + database interaction
+- Team roster management (Red vs Green)
+- Game timer, scoreboard, and event log display
+- Music playback during gameplay (optional via pygame)
+
+Works alongside:
+- controller.py → handles game logic + networking + DB calls
 """
 
 import os
@@ -43,6 +36,10 @@ except Exception as e:
     PIL_OK = False
     print("Pillow/ImageTk import failed:", e)
 
+# -----------------------------
+# Timing & Game Configuration
+# -----------------------------
+
 MS_SplashTime = 3000
 teamRows = 15
 
@@ -56,6 +53,17 @@ WARNING_MUSIC_DELAY = 13
 # =============================================================================
 
 class EntryScreen(tk.Frame):
+    """
+    Entry screen where players are added before the game starts.
+
+    Features:
+    - Add players to RED or GREEN teams
+    - Prevent duplicate Player IDs in same session
+    - Fetch codename from DB or allow new entry
+    - Validate Player ID and Equipment ID
+    - Start game or clear all entries
+    """
+    
     def __init__(self, parent, startGame=None):
         super().__init__(parent, bg="black")
         self.startGame = startGame
@@ -173,6 +181,14 @@ class EntryScreen(tk.Frame):
         self.after_idle(self.refreshTables)
 
     def _validatePlayerID(self, raw):
+        """
+        Validates Player ID input:
+        - Must not be empty
+        - Must be an integer
+        - Must be positive
+        Returns: (value, error_message)
+        """
+        
         raw = raw.strip()
         if not raw:
             return None, "Player ID cannot be empty."
@@ -185,6 +201,10 @@ class EntryScreen(tk.Frame):
         return value, None
 
     def _validateEquipmentID(self, raw):
+        """
+        Same validation rules as Player ID but for equipment.
+        """
+        
         raw = raw.strip()
         if not raw:
             return None, "Equipment ID cannot be empty."
@@ -255,6 +275,17 @@ class EntryScreen(tk.Frame):
         )
 
     def on_playerID_changed(self, event=None):
+        """
+        Triggered when Player ID field loses focus or user presses Enter.
+    
+        Logic:
+        - Validate Player ID
+        - Prevent duplicates in current session
+        - Query database for existing player
+            → If found: autofill codename (readonly)
+            → If not: allow user to enter new codename
+        """
+        
         raw = self.entryPlayerID.get().strip()
 
         if raw == "":
@@ -309,6 +340,18 @@ class EntryScreen(tk.Frame):
             self.statusVariable.set(f"Unknown database status: {status}")
 
     def addPlayerOn(self):
+        """
+        Adds a player to the selected team.
+    
+        Steps:
+        1. Validate Player ID and Equipment ID
+        2. Ensure Player ID not already used this session
+        3. Get codename (from DB or user input)
+        4. Insert new player into DB if needed
+        5. Add player to controller + local roster
+        6. Refresh UI tables
+        """
+        
         team = self.teamVariable.get().strip().upper()
 
         playerID, error = self._validatePlayerID(self.entryPlayerID.get())
@@ -381,6 +424,14 @@ class EntryScreen(tk.Frame):
         self.statusVariable.set("Already on Entry screen.")
 
     def on_f12(self):
+        """
+        Clears entire game session:
+        - Calls controller to reset backend
+        - Clears both team rosters
+        - Resets used Player IDs
+        - Clears UI fields
+        """
+        
         controller.clearItAll()
         self.redRoster.clear()
         self.greenRoster.clear()
@@ -426,6 +477,22 @@ class EntryScreen(tk.Frame):
 # =============================================================================
 
 class ActionScreen(tk.Frame):
+    """
+    Live game screen.
+
+    Displays:
+    - Game phase (Ready, Warning, Playing, Ended)
+    - Countdown timer
+    - Team scoreboards
+    - Player scores
+    - Play-by-play event log
+
+    Also handles:
+    - Music playback (optional)
+    - Flashing winning team score
+    - Return to Entry screen after game ends
+    """
+    
     def __init__(self, parent, on_return_entry=None, auto_start=False):
         super().__init__(parent, bg="black")
         self.on_return_entry = on_return_entry
@@ -480,6 +547,14 @@ class ActionScreen(tk.Frame):
         print("Warning: Base icon could not be loaded. Using [BASE] fallback.")
 
     def _setup_music(self):
+        """
+        Loads all MP3 files from assets folder.
+    
+        If pygame is available:
+        - Initializes audio system
+        - Prepares music playback
+        """
+        
         self.trackFiles = []
     
         assets_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "assets"))
@@ -582,6 +657,17 @@ class ActionScreen(tk.Frame):
     
     
     def _handle_phase_audio(self, phase):
+        """
+        Controls music based on game phase:
+    
+        WARNING:
+            - Wait before starting music (delayed start)
+        PLAYING:
+            - Ensure music is playing
+        OTHER:
+            - Stop music
+        """
+        
         now = time.monotonic()
     
         if phase != self._last_phase:
@@ -772,6 +858,12 @@ class ActionScreen(tk.Frame):
             self._return_button_visible = False
 
     def _apply_flashing_totals(self, red_total, green_total):
+        """
+        Makes the winning team's score flash.
+    
+        If tied → no flashing
+        """
+        
         self._flash_on = not self._flash_on
 
         red_normal = "#ff4444"
@@ -818,6 +910,15 @@ class ActionScreen(tk.Frame):
         self._apply_flashing_totals(red_total, green_total)
 
     def _build_scoreboard(self, frame, team, color):
+        """
+        Rebuilds scoreboard UI for a team.
+    
+        Displays:
+        - Player codename
+        - Player score
+        - Base icon if player has it
+        """
+        
         for widget in frame.winfo_children():
             widget.destroy()
 
@@ -912,6 +1013,17 @@ class ActionScreen(tk.Frame):
         self._last_log_index = len(event_log)
 
     def actionScreenUpdate(self):
+        """
+        Main update loop (runs every 250ms):
+    
+        - Updates game timer via controller
+        - Gets current snapshot of game state
+        - Updates:
+            • Phase + timer
+            • Scoreboards
+            • Event log
+        """
+        
         controller.updateTimer()
         snapshot = controller.getActionSnapshot()
 
@@ -952,6 +1064,19 @@ class ActionScreen(tk.Frame):
 # =============================================================================
 
 def startApp():
+    """
+    Entry point of the application.
+
+    Flow:
+    1. Show splash screen
+    2. Transition to EntryScreen
+    3. Start UDP listener (networking)
+    4. Handle global key bindings:
+        - F1 → Entry
+        - F5/F3 → Start game
+        - F12 → Clear game
+    """
+    
     root = tk.Tk()
     root.title("Team One's Photon Laser Tag")
     root.withdraw()
