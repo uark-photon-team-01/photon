@@ -30,6 +30,26 @@ The parts of code that were pulled from Jim's repo were:
 - So don't run it (AND do not create/alter tables).
 """
 
+
+"""
+=========================================================
+DATABASE SETUP & CONSTRAINTS
+=========================================================
+- The database is PostgreSQL, running locally on the VM.
+- Target DB: 'photon' | Target Table: 'players'
+- START COMMAND: sudo systemctl start postgresql
+
+CRITICAL RULES:
+- Use the provided database as-is. 
+- DO NOT create, alter, or truncate the table.
+
+Terminal Verification Commands (Run in a separate terminal):
+- View tables: psql -d photon -c "\dt"
+- View table structure: psql -d photon -c "\d players"
+- Print contents: psql -d photon -c "SELECT * FROM players ORDER BY id;"
+- Count rows: psql -d photon -c "SELECT COUNT(*) FROM players;"
+"""
+
 # This code is from Jim's repo: python-pg.py
 import psycopg2
 import psycopg2.errors

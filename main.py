@@ -12,5 +12,39 @@ from ui import app # Imports the app.py from the ui folder
 # tkr.Label(window, text = "Hey Ya! This Repo skeleton is good to go.").pack(padx=25, pady=25)
 # window.mainloop() #starts an event loop to keep the app running until a user quits.
 
+"""
+=========================================================
+PHOTON LASER TAG - MAIN ENTRY POINT
+=========================================================
+Repository Structure:
+- main.py    : Starts the app, creates the main window, and handles screen flow (splash -> entry -> game).
+- install.sh : Setup script for dependencies (installs python3-tk, etc.).
+- db/        : PostgreSQL database code.
+- ui/        : Tkinter screen and window UI code.
+- net/       : Network and UDP communication code.
+- assets/    : Images and audio files.
+
+How to Run (VM Instructions):
+1. Login with student / student
+2. Open Terminal Emulator:
+   cd ~
+   sudo apt-get update
+   git clone https://github.com/uark-photon-team-01/photon.git
+   cd ~/photon
+   git checkout main && git fetch origin && git reset --hard origin/main && git clean -fd
+   bash install.sh
+   pkill -f "python3 main.py" 2>/dev/null || true
+   python3 main.py
+
+*UI RENDERING NOTE*: If widgets do not fully draw on startup, drag and resize 
+the window. This forces Linux/VirtualBox to send a fresh repaint event.
+
+Team Info:
+- Centarrius Brooks (CentariB)
+- Will Boone (WillBoone24)
+- Emma Mahaffey (EmmaMah258)
+- Caleb Carpenter (CollegeBoundCaleb)
+"""
+
 if __name__ == "__main__":
     app.startApp()

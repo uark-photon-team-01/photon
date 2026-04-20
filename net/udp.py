@@ -26,6 +26,44 @@ Important Info:
 - This starter cide is kinda minimal it just sets up the network to send, receive, print.
 """
 
+"""
+=========================================================
+NETWORK ARCHITECTURE & HARDWARE TESTING
+=========================================================
+Ports & Routing:
+- Broadcast/Client Traffic: Port 7500
+- Listener: Port 7501 (Binds to 0.0.0.0 to accept from any IP)
+- Changing the "Broadcast IP" in the UI ONLY changes the client destination. 
+  It does not alter the listener address.
+
+Instructor Traffic Generator:
+- Waits for code 202 (Game Start) to begin sending gameplay traffic.
+- Stops sending traffic when it receives code 221 (Game End).
+
+TESTING CHECKLIST (Run via netcat in Terminal B):
+Setup: IP = 127.0.0.1. 
+Red Team: Spiderman (ID 1, Eq 11), Batman (ID 2, Eq 22). 
+Green Team: Wolverine (ID 3, Eq 33).
+
+1. Opponent Tag (11:33) -> Spiderman gets 10 pts, Red gets 10 pts.
+   Command: echo -n "11:33" | nc -u -w1 127.0.0.1 7501
+   
+2. Same-Team Tag (11:22) -> Spiderman & Batman both LOSE 10 pts. Red drops 20 pts.
+   Command: echo -n "11:22" | nc -u -w1 127.0.0.1 7501
+   
+3. Red Base Score (11:43) -> Spiderman gets 100 pts + Base Icon. Red gets 100 pts.
+   Command: echo -n "11:43" | nc -u -w1 127.0.0.1 7501
+   
+4. Green Base Score (33:53) -> Wolverine gets 100 pts + Base Icon. Green gets 100 pts.
+   Command: echo -n "33:53" | nc -u -w1 127.0.0.1 7501
+
+5. Invalid Data ("hello" or "9999") -> Ignored, prints warning. No crash.
+6. Unknown Transmitter ("99:33") -> Ignored, error logged.
+7. Self-Tag ("11:11") -> Ignored, error logged.
+8. Pre-Game Event -> Ignored if the game is in WARNING or ENDED phase.
+"""
+
+
 import socket
 import threading
 import time
