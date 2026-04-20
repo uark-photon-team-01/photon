@@ -21,6 +21,28 @@ lastTickOfTimer = None
 # Basic Functions You Will Need
 # ------------------------------
 
+"""
+=========================================================
+PHOTON GAME CONTROLLER - LOGIC & STATE
+=========================================================
+This file acts as the central brain. The UI (app.py) calls this, 
+and this calls the Database (database.py) and Network (udp.py).
+
+SCORING & GAMEPLAY RULES:
+1. Opponent Tag    : Tagger gains 10 points. Team gains 10 points.
+2. Same-Team Tag   : Tagger loses 10 points. Tagged loses 10 points. 
+                     Team total drops by 20 points.
+3. Base Score      : Player gains 100 points and receives a [BASE] icon. 
+                     Team gains 100 points.
+   - Code 43 = Red Base (Green player scores)
+   - Code 53 = Green Base (Red player scores)
+
+INVALID EVENT HANDLING:
+- Unknown transmitter IDs or garbage text ("hello") are ignored.
+- Self-tags (e.g., 11:11) are ignored.
+- Hits received before the "PLAYING" phase are ignored.
+"""
+
 def grabState():
     """
     The UI will call this to read the current state of the game.
