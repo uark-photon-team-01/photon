@@ -13,10 +13,6 @@
 
 ## How to Run the Program
 
-### Prerequisites
-- Python 3.x installed
-- PostgreSQL database installed and running
-- Running on Debian/Ubuntu Linux (recommended) or compatible system
 
 ---
 
@@ -193,7 +189,7 @@ The application expects a PostgreSQL database with the following configuration:
 - **Username:** `student`
 - **Table:** `players` with columns `(id, codename)`
 
-**Note:** The application does **NOT** modify the database schema. It only performs normal row-level operations on the existing table and does not change the schema. In normal app flow, it uses SELECT and INSERT; DELETE is only for targeted cleanup/testing.
+
 
 ---
 
@@ -262,8 +258,4 @@ If equipment broadcasts aren't working:
 
 ---
 
-## Development Notes
 
-- All UI code should call controller functions (never access database or network directly)
-- Database schema should NOT be modified by the application (read-only schema)
-- UDP broadcasts happen automatically after each player is added to a team
