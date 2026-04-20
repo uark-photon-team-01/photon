@@ -129,13 +129,7 @@ Terminal A should show: IP change line & a broadcast line now using 127.0.0.2:75
 Now you know that the network code works properly.
 
 
-## Hardware / Traffic Generator Testing
 
-- UDP broadcast/client traffic goes out on port `7500`.
-- The listener accepts packets from any IP address on port `7501` by binding to `0.0.0.0`.
-- The Broadcast IP field in the UI changes only the client/broadcast destination. It does not change the listener address.
-- The instructor traffic generator waits for `202` before sending gameplay traffic and stops after your program sends `221`.
-- Use the provided database as-is. Do not alter the schema or recreate the table.
 
 ## Network / Gameplay Test Checklist
 
